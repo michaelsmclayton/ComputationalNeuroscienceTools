@@ -22,8 +22,8 @@ def get_mean_delays(mean_delay_exc, mean_delay_inh, number_of_pop):
 
     dim = number_of_pop
     mean_delays = np.zeros((dim, dim))
-    mean_delays[:, 0:dim:2] = mean_delay_exc
-    mean_delays[:, 1:dim:2] = mean_delay_inh
+    mean_delays[:, 0:dim:2] = mean_delay_exc # Set excitatory neurons to excitatory delays
+    mean_delays[:, 1:dim:2] = mean_delay_inh # Set inhibitory neurons to inhibitory delays
     return mean_delays
 
 
@@ -110,22 +110,27 @@ def get_std_PSP_matrix(PSP_rel, number_of_pop):
     return std_mat
 
 net_dict = {
+    
     # Neuron model.
     'neuron_model': 'iaf_psc_exp',
+    
     # The default recording device is the spike_detector. If you also
     # want to record the membrane potentials of the neurons, add
     # 'voltmeter' to the list.
     'rec_dev': ['spike_detector'],
+    
     # Names of the simulated populations.
     'populations': ['L23E', 'L23I', 'L4E', 'L4I', 'L5E', 'L5I', 'L6E', 'L6I'],
+    
     # Number of neurons in the different populations. The order of the
     # elements corresponds to the names of the variable 'populations'.
     'N_full': np.array([20683, 5834, 21915, 5479, 4850, 1065, 14395, 2948]),
+    
     # Mean rates of the different populations in the non-scaled version
     # of the microcircuit. Necessary for the scaling of the network.
     # The order corresponds to the order in 'populations'.
-    'full_mean_rates':
-        np.array([0.971, 2.868, 4.746, 5.396, 8.142, 9.078, 0.991, 7.523]),
+    'full_mean_rates': np.array([0.971, 2.868, 4.746, 5.396, 8.142, 9.078, 0.991, 7.523]),
+    
     # Connection probabilities. The first index corresponds to the targets
     # and the second to the sources.
     'conn_probs':
@@ -139,72 +144,102 @@ net_dict = {
              [0.0156, 0.0066, 0.0211, 0.0166, 0.0572, 0.0197, 0.0396, 0.2252],
              [0.0364, 0.001, 0.0034, 0.0005, 0.0277, 0.008, 0.0658, 0.1443]]
             ),
+    
     # Number of external connections to the different populations.
     # The order corresponds to the order in 'populations'.
     'K_ext': np.array([1600, 1500, 2100, 1900, 2000, 1900, 2900, 2100]),
+    
     # Factor to scale the indegrees.
     'K_scaling': 0.1,
+    
     # Factor to scale the number of neurons.
     'N_scaling': 0.1,
+    
     # Mean amplitude of excitatory postsynaptic potential (in mV).
     'PSP_e': 0.15,
+    
     # Relative standard deviation of the postsynaptic potential.
     'PSP_sd': 0.1,
+    
     # Relative inhibitory synaptic strength (in relative units).
     'g': -4,
+    
     # Rate of the Poissonian spike generator (in Hz).
     'bg_rate': 8.,
+    
     # Turn Poisson input on or off (True or False).
     'poisson_input': True,
+    
     # Delay of the Poisson generator (in ms).
     'poisson_delay': 1.5,
+    
     # Mean delay of excitatory connections (in ms).
     'mean_delay_exc': 1.5,
+    
     # Mean delay of inhibitory connections (in ms).
     'mean_delay_inh': 0.75,
+    
     # Relative standard deviation of the delay of excitatory and
+    
     # inhibitory connections (in relative units).
     'rel_std_delay': 0.5,
+    
     # Parameters of the neurons.
     'neuron_params': {
+        
         # Membrane potential average for the neurons (in mV).
         'V0_mean': -58.0,
+        
         # Standard deviation of the average membrane potential (in mV).
         'V0_sd': 10.0,
+        
         # Reset membrane potential of the neurons (in mV).
         'E_L': -65.0,
+        
         # Threshold potential of the neurons (in mV).
         'V_th': -50.0,
+        
         # Membrane potential after a spike (in mV).
         'V_reset': -65.0,
+        
         # Membrane capacitance (in pF).
         'C_m': 250.0,
+        
         # Membrane time constant (in ms).
         'tau_m': 10.0,
+        
         # Time constant of postsynaptic excitatory currents (in ms).
         'tau_syn_ex': 0.5,
+        
         # Time constant of postsynaptic inhibitory currents (in ms).
         'tau_syn_in': 0.5,
+        
         # Time constant of external postsynaptic excitatory current (in ms).
         'tau_syn_E': 0.5,
+        
         # Refractory period of the neurons after a spike (in ms).
         't_ref': 2.0}
     }
 
+
 updated_dict = {
+
     # PSP mean matrix.
     'PSP_mean_matrix': get_mean_PSP_matrix(
         net_dict['PSP_e'], net_dict['g'], len(net_dict['populations'])
         ),
+    
     # PSP std matrix.
     'PSP_std_matrix': get_std_PSP_matrix(
         net_dict['PSP_sd'], len(net_dict['populations'])
         ),
+    
     # mean delay matrix.
     'mean_delay_matrix': get_mean_delays(
         net_dict['mean_delay_exc'], net_dict['mean_delay_inh'],
         len(net_dict['populations'])
         ),
+    
     # std delay matrix.
     'std_delay_matrix': get_std_delays(
         net_dict['mean_delay_exc'] * net_dict['rel_std_delay'],
@@ -212,6 +247,5 @@ updated_dict = {
         len(net_dict['populations'])
         ),
     }
-
 
 net_dict.update(updated_dict)
