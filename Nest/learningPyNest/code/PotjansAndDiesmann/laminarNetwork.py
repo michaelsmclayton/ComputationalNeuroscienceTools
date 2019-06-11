@@ -199,8 +199,9 @@ class Network:
             of 10ms. It is interesting to note that, in the paper by Mejias et al. (2016),
             the following tau_m values were used:
                 For superficial neurons: τE = 6 ms, τI = 15 ms
-                For infragranular neurons: τE = 30 ms, τI = 75 ms 
+                For infragranular neurons: τE = 30 ms, τI = 75 ms
             '''
+
             nest.SetStatus(
                 population, {
                     'tau_syn_ex': self.net_dict['neuron_params']['tau_syn_ex'],
@@ -209,7 +210,8 @@ class Network:
                     'V_th': self.net_dict['neuron_params']['V_th'],
                     'V_reset':  self.net_dict['neuron_params']['V_reset'],
                     't_ref': self.net_dict['neuron_params']['t_ref'],
-                    'I_e': self.DC_amp_e[i]
+                    'I_e': self.DC_amp_e[i]#,
+                    # 'tau_m': self.net_dict['time_constants'][i]
                     }
                 )
 
@@ -435,23 +437,27 @@ class Network:
                 # Get current number of synapses
                 synapse_nr = int(self.synapses_scaled[i][j])
 
-
                 if synapse_nr >= 0.:
                     
+                    # Get current weight mean and std
                     weight = self.weight_mat[i][j]
                     w_sd = abs(weight * self.weight_mat_std[i][j])
-                    conn_dict_rec = {
-                        'rule': 'fixed_total_number', 'N': synapse_nr
-                        }
+                    
+                    # Set synapse connection rule
+                    conn_dict_rec = {'rule': 'fixed_total_number', 'N': synapse_nr}
+
+                    # Set synapse model and dynamics
                     syn_dict = {
                         'model': 'static_synapse',
                         'weight': {
-                            'distribution': 'normal_clipped', 'mu': weight,
+                            'distribution': 'normal_clipped',
+                            'mu': weight,
                             'sigma': w_sd
                             },
                         'delay': {
                             'distribution': 'normal_clipped',
-                            'mu': mean_delays[i][j], 'sigma': std_delays[i][j],
+                            'mu': mean_delays[i][j],
+                            'sigma': std_delays[i][j],
                             'low': self.sim_resolution
                             }
                         }
@@ -459,11 +465,13 @@ class Network:
                         syn_dict['weight']['high'] = 0.0
                     else:
                         syn_dict['weight']['low'] = 0.0
+                    
+                    # Connect synapses (from source to target population)
                     nest.Connect(
                         source_pop, target_pop,
                         conn_spec=conn_dict_rec,
                         syn_spec=syn_dict
-                        )
+                    )
 
     def connect_poisson(self):
         """ Connects the Poisson generators to the microcircuit."""

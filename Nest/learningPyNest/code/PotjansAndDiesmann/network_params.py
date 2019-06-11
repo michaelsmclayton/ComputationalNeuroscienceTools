@@ -249,3 +249,30 @@ updated_dict = {
     }
 
 net_dict.update(updated_dict)
+
+# ---------------------------------------------------------
+# Set different time_constants for excitatory and inhibitory neurons in different layers
+# ---------------------------------------------------------
+
+# Set time constants
+tc_super_exc = 6.
+tc_super_inh = 15.
+tc_gran_exc = 10.
+tc_gran_inh = 10.
+tc_infra_exc = 30.
+tc_infra_inh = 75.
+# tc_super_exc = 10.
+# tc_super_inh = 10.
+# tc_gran_exc = 10.
+# tc_gran_inh = 10.
+# tc_infra_exc = 10.
+# tc_infra_inh = 10.
+
+# Set updated dictionary and update
+updated_dict = {
+    'time_constants': [ tc_super_exc, tc_super_inh, \
+                        tc_gran_exc, tc_gran_inh, \
+                        tc_infra_exc, tc_infra_inh, \
+                        tc_infra_exc, tc_infra_inh]
+}
+net_dict.update(updated_dict)
