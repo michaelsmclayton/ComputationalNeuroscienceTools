@@ -8,9 +8,13 @@
 # Run container (with local files mounted)
 ############################################
 IMAGE_NAME=neuralensemble/simulation
-SRC_DR=$(pwd)/code # State source directory
+CONTAINER_NAME=neuro_simulator
+# NEST_MODELS_DR=/home/docker/packages/nest-2.14.0/models
+docker rm $CONTAINER_NAME
+SRC_DR=$(pwd) # State source directory
 docker run \
-    --volume "$SRC_DR:/code" \
+    --name $CONTAINER_NAME \
+    --volume "$SRC_DR/code:/code" \
     --workdir=/code \
     -it $IMAGE_NAME /bin/bash
 
