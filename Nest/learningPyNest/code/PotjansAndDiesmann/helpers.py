@@ -344,7 +344,7 @@ def plot_raster(path, name, begin, end):
         '#000000', '#888888', '#000000', '#888888',
         '#000000', '#888888', '#000000', '#888888'
         ]
-    Fig1 = plt.figure(1, figsize=(8, 6))
+    Fig1 = plt.figure(1, figsize=(6, 12))
     for i in list(range(len(files))):
         times = data_all[i][:, 1]
         neurons = np.abs(data_all[i][:, 0] - highest_gid) + 1
