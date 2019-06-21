@@ -198,6 +198,84 @@ equations.append(equation8)
 
 
 
+'''
 
+        ##########################
+        SYNAPSES
+        ##########################
+
+        # PARAMETERS
+
+        {
+            # Synaptic dynamics
+            alpha / alpha 1 & alpha 2
+            beta / beta 1 & beta 2
+                / Kd n
+            gSynMax
+            ESyncRev # reverse potential
+
+            # Connection strength
+            Cuvw
+        }
+        
+        Presynaptic activity
+        (For GABAb)
+        R = fraction of activated GABAB receptors, which acts as a catalyst for G-protein (X)
+        X = concentration of the activated G-protein
+        (For AMPA and GABAa)
+        r = proportion of open ion-channels on the post-synaptic population
+        (caused by the binding of the neurotransmitters)
+
+        Equations 1, 2, 3, 4, 5, 6
+
+        v
+
+        Postsynaptic current
+
+        ##########################
+        POPULATIONS
+        ##########################
+
+        # PARAMETERS
+
+        gLeak
+        Eleak
+        vRest
+
+
+        Equation 7
+
+
+
+Area = {
+    constants: {
+        gLeak
+        Eleak
+        vRest
+    }
+
+    inputVariables = {
+        Ipsp : from synapse
+
+    }
+
+    equations = eqs (Equations 7 and 8)
+
+    stateVariables = {
+        'Vm', # Equation 7
+        'Ileak', # Equation 8
+    }
+    
+}
+
+Connection = {
+    connectivity = Cuvm
+    synapticDynamicsConstants = {
+
+    }
+}
+        
+
+'''
 
 
