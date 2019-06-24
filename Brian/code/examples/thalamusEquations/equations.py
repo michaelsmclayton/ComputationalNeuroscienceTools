@@ -9,7 +9,7 @@ def getEquations(equations, eqsOfInterest):
         eqs += equations[eq]
     return eqs
 
-# Initialise store (with empty first entry, so that Equation 1 = index 1)
+# Initialise store (with empty 1st entry, so Equation 1 = index 1)
 equations = ['''empty''']
 
 # ---------------------------------------------------
@@ -69,7 +69,7 @@ equations.append('''
 # Equation 6 - post-synaptic current
 '''Returns current density A/m2'''
 equations.append('''
-    Ipsp_syn = Cuvw * gSynMax * r * (V - ESyncRev) : 1
+    Ipsp_syn = Cuvw * gSynMax * r * (V - ESynRev) : 1
 ''')
 
 # Equation 7 - post-synaptic membrane potential
