@@ -3,11 +3,11 @@
 # Define synapse parameters
 # ----------------------------------------
 
-def AMPA_parameters(gSyncMax):
+def AMPA_parameters(gSynMax):
     return '''
     alpha = 1000**-1 : 1 # * mM**-1 * second**-1
     beta = 50**-1 : 1 # * second**-1 # reverse rates of chemical reactions
-    gSynMax = ''' + str(gSyncMax) + ''' : 1 # * uS/cm2 # maximum conductance
+    gSynMax = ''' + str(gSynMax) + ''' : 1 # * uS/cm2 # maximum conductance
     ESynRev = 0 : 1 # * mV # reverse potential
     '''
 
@@ -40,7 +40,7 @@ connections = {
         'TRN': {
             'synType': 'AMPA',
             'connectionStrength': 35,
-            'gSyncMax': 100
+            'gSynMax': 100
         }
     },
 
@@ -88,13 +88,13 @@ connections = {
         'TCR': {
             'synType': 'AMPA',
             'connectionStrength': 7.1,
-            'gSyncMax': 300
+            'gSynMax': 300
         },
         # interneuron population
         'IN': {
             'synType': 'AMPA',
             'connectionStrength': 47.4,
-            'gSyncMax': 100
+            'gSynMax': 100
         },
     }
 }

@@ -1,9 +1,13 @@
 from matplotlib.pyplot import *
 import pickle
 from populations import *
+from scipy.signal import butter, sosfilt, sosfreqz, welch
+
+sampleRate = 1000
+plotWindow = [10*sampleRate, 39*sampleRate]
 
 # Define plotting function
-def plotResult(populationData, plotWindow=[150000, 250000]):
+def plotResult(populationData, plotWindow=plotWindow):
 
     #-------------------------------------------
     # Analyse / plot results
@@ -11,13 +15,55 @@ def plotResult(populationData, plotWindow=[150000, 250000]):
     figure()
     areasToPlot = ['RET', 'TCR', 'IN', 'TRN']
     times = populationData['times']
-    plotWindow = [100000, 250000]
     for index, pop in enumerate(areasToPlot):
+        
+        # Process data
+        dataToPlot = populationData[pop]
+        if pop != 'RET':
+            dataToPlot = butter_bandpass_filter(dataToPlot, lowcut=1, highcut=100)
+        
+        # Plot raw data
+        figure(1, figsize=(12,5))
         subplot(len(areasToPlot), 1, index+1)
-        plot(times[plotWindow[0]:plotWindow[1]], populationData[pop][plotWindow[0]:plotWindow[1]], linewidth=.5)
+        plot(times[plotWindow[0]:plotWindow[1]], dataToPlot[plotWindow[0]:plotWindow[1]], linewidth=.5)
         ylabel(pop)
+        
+        # Plot power spectral density
+        figure(2, figsize=(5,12))
+        subplot(len(areasToPlot), 1, index+1)
+        freqs, psd = powerSpectralDensity(dataToPlot[plotWindow[0]:plotWindow[1]])
+        plot(freqs, psd, color='k', lw=2)
+        xlabel('Frequency (Hz)')
+        ylabel('Power spectral density (V^2 / Hz)')
+        title(pop)
+        xlim([2, 30])
+    
     show()
-    # savefig('current2.png')
+
+# ---------------------------------
+# Filtering
+# ---------------------------------
+def butter_bandpass(lowcut, highcut, fs, order):
+        nyq = 0.5 * fs
+        low = lowcut / nyq
+        high = highcut / nyq
+        return butter(order, [low, high], analog=False, btype='band', output='sos')
+def butter_bandpass_filter(data, lowcut, highcut, fs=sampleRate, order=10):
+        sos = butter_bandpass(lowcut, highcut, fs, order)
+        y = sosfilt(sos, data)
+        return y
+
+
+# ---------------------------------
+# Power analysis
+# ---------------------------------
+def powerSpectralDensity(data):
+
+    # Define window length (4 seconds)
+    win = 2 * sampleRate
+    freqs, psd = welch(data, sampleRate, nperseg=win)
+    return freqs, psd
+
 
 if __name__ == "__main__":
 
@@ -26,18 +72,4 @@ if __name__ == "__main__":
         populationData = pickle.load(handle)
 
     # Plot data
-
-# plotWindow = [150000, 250000]
-# samplingRate = 1000
-# timeSeries = populationData['TCR'][plotWindow[0]:plotWindow[1]]
-
-# results = welch_psd(timeSeries, fs=samplingRate)
-
-# dataLength = len(results[0])
-# def getFrequencyIndex(percent):
-#     return int(percent*dataLength)
-# startIndex = getFrequencyIndex(.05)
-# endIndex = getFrequencyIndex(.15)
-# rangeOfInterest = range(startIndex, endIndex)
-# plot(results[0][rangeOfInterest], results[1][rangeOfInterest])
-# show()
+    plotResult(populationData)

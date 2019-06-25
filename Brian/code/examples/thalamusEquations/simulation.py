@@ -7,10 +7,11 @@ from analyse import plotResult
 import pickle
 
 # General parameters
+dt = 1 * ms
 tau = 1 * ms
 integrationMethod = 'rk2' # integrationMethod rk2, rk4
 km = 10 * ms # uF/cm2
-simulationLength = 25000 * ms
+simulationLength = 40000 * ms
 
 # Remove connections fron IN
 # del connections['IN']
@@ -33,21 +34,20 @@ for pop in populations:
         stdInput = params['outputSTD']
         RET = NeuronGroup(1, threshold='t>0*10*ms',
             reset = 'V = %s + (randn()*%s)' % (meanInput, stdInput),
-            model = eqs, method=integrationMethod)
+            model = eqs, method=integrationMethod, dt=dt)
         RET.V = params['outputMean']
 
     else:
         eqs = getEquations(equations, [7, 8]) + '''
             gLeak = ''' + str(params['gLeak']) + ''' : 1
             Eleak = ''' + str(params['Eleak']) + ''' : 1'''
-        globals()[pop] = NeuronGroup(1, threshold='t>0*10*ms', model=eqs, method=integrationMethod)
+        globals()[pop] = NeuronGroup(1, threshold='t>0*10*ms', dt=dt, model=eqs, method=integrationMethod)
 
         # Set initial conditions
         globals()[pop].V = params['Vrest']
 
     # Create recording devices
     globals()[pop+'data'] = StateMonitor(globals()[pop], variablesToRecord, record=True)
-
 
 #-------------------------------------------
 # Create synapses
@@ -65,7 +65,7 @@ def getSynapseEquations(currentSynapse):
     
     # Get synapse parameters
     if synapseType == 'AMPA':
-        synapseParams = AMPA_parameters(gSyncMax=currentSynapse['gSyncMax'])
+        synapseParams = AMPA_parameters(gSynMax=currentSynapse['gSynMax'])
     elif synapseType == 'GABAa':
         synapseParams = GABAa_parameters(ESynRev=currentSynapse['ESynRev'])
     elif synapseType == 'GABAb':
@@ -73,7 +73,7 @@ def getSynapseEquations(currentSynapse):
 
     # Get connection weights:
     connectionWeight = '''
-        Cuvw = ''' + str(currentSynapse['connectionStrength']/100) + ''' : 1
+        Cuvw = ''' + str(currentSynapse['connectionStrength']) + ''' : 1
     '''
 
     # Return equations
@@ -91,7 +91,7 @@ for efferent in connections:
         afferentPop = globals()[afferent]
         globals()[efferent + '_' + afferent] = \
             Synapses(efferentPop, afferentPop, model=eqs,
-                on_post = '''Ipsp += Ipsp_syn''', method=integrationMethod)
+                on_post = '''Ipsp += Ipsp_syn''', dt=dt, method=integrationMethod)
 
         # Connect populations with synapses
         globals()[efferent + '_' + afferent].connect()
@@ -109,7 +109,7 @@ for efferent in connections:
 # Run simulation!
 #-------------------------------------------
 BrianLogger.log_level_debug()
-seed(123)
+seed(int(rand()*10000))
 run(simulationLength)
 # print("Time is %s" % (t))
 
