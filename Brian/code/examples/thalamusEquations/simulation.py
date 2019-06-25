@@ -3,6 +3,7 @@ from matplotlib.pyplot import *
 from equations import equations, getEquations
 from populations import *
 from synapses import *
+from analyse import plotResult
 import pickle
 
 # General parameters
@@ -10,6 +11,9 @@ tau = 1 * ms
 integrationMethod = 'rk2' # integrationMethod rk2, rk4
 km = 10 * ms # uF/cm2
 simulationLength = 25000 * ms
+
+# Remove connections fron IN
+# del connections['IN']
 
 #-------------------------------------------
 # # Create populations (and recorders)
@@ -25,11 +29,11 @@ for pop in populations:
     params = populations[pop]['customParameters'] # Get parameters
     if pop == 'RET': # retina
         eqs = '''V : 1'''
-        meanInput = str(params['outputMean'])
-        stdInput = str(params['outputSTD'])
+        meanInput = params['outputMean']
+        stdInput = params['outputSTD']
         RET = NeuronGroup(1, threshold='t>0*10*ms',
-            reset='V = '+meanInput+' + (('+stdInput+'*rand())-1)',
-            model=eqs, method=integrationMethod)
+            reset = 'V = %s + (randn()*%s)' % (meanInput, stdInput),
+            model = eqs, method=integrationMethod)
         RET.V = params['outputMean']
 
     else:
@@ -107,40 +111,24 @@ for efferent in connections:
 BrianLogger.log_level_debug()
 seed(123)
 run(simulationLength)
+# print("Time is %s" % (t))
 
 
 #-------------------------------------------
-# Analyse / plot results
+# Combine results into dictionary
 #-------------------------------------------
 populationData = {}
-figure()
 areasToPlot = ['RET', 'TCR', 'IN', 'TRN']
-plotWindow = [150000, 250000]
 for index, pop in enumerate(areasToPlot):
     populationData[pop] = globals()[pop+'data'].V[0]
-    times = globals()[pop+'data'].t/ms
-    subplot(len(areasToPlot), 1, index+1)
-    plot(times[plotWindow[0]:plotWindow[1]], populationData[pop][plotWindow[0]:plotWindow[1]], linewidth=.5)
-    ylabel(pop)
-    # xlim(15000, 25000)
+populationData['times'] = globals()[pop+'data'].t/ms
 
-show()
+#-------------------------------------------
+# Store results
+#-------------------------------------------
+f = open("simulationResults_new.pkl","wb")
+pickle.dump(populationData, f)
+f.close()
 
-# #-------------------------------------------
-# # Store results
-# #-------------------------------------------
-# with open('simulationResults.pickle', 'wb') as handle:
-#     pickle.dump(populationData, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-# figure()
-# nRows = 2; nCols = 2
-# subplot(nRows, nCols, 1)
-# plot(M1.t/ms, M1.V[0])
-# subplot(nRows, nCols, 2)
-# plot(M1.t/ms, M2.V[0])
-# subplot(nRows, nCols, 3)
-# plot(M1.t/ms, M1.Ipsp[0])
-# subplot(nRows, nCols, 4)
-# plot(M1.t/ms, M2.Ipsp[0])
-# show()
-# # savefig('current.png')
+# Plot result
+plotResult(populationData)
