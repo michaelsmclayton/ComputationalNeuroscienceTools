@@ -30,7 +30,7 @@ equations.append('''
 
 # Equation 2
 equations.append('''
-    dr/dt = ( alpha * T * (1 - r) - beta * r ) / tau : 1
+    dr/dt = ( alpha * T * (1 - r) - beta * r ) / tau : 1 (clock-driven)
 ''')
 
 # -----------------------------
@@ -40,14 +40,14 @@ equations.append('''
 # Equation 3 - metabotropic synapses (AMPA, GABAa)
 ''' Get the fraction of activated GABAB receptors'''
 equations.append( '''
-    dR/dt = ( alpha1 * T * (1 - R) - beta1 * R ) / tau : 1
+    dR/dt = ( alpha1 * T * (1 - R) - beta1 * R ) / tau : 1 (clock-driven)
 ''')
 
 # Equation 4 - secondary messenger concentration
 '''Get the concentration of the activated G-protein'''
 '''dX(t)/dt'''
 equations.append('''
-    dX/dt = ( alpha2 * R - beta2 * X ) / tau : 1
+    dX/dt = ( alpha2 * R - beta2 * X ) / tau : 1 (clock-driven)
 ''')
 
 # Equation 5 - get fraction of open ion channels

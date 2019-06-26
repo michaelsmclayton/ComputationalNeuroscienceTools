@@ -3,15 +3,21 @@ from matplotlib.pyplot import *
 from equations import equations, getEquations
 from populations import *
 from synapses import *
-from analyse import plotResult
+from analyse import analyseManyResults
 import pickle
 
 # General parameters
 dt = 1 * ms
 tau = 1 * ms
-integrationMethod = 'rk2' # integrationMethod rk2, rk4
+integrationMethod = 'exact' # integrationMethod rk2, rk4
 km = 10 * ms # uF/cm2
 simulationLength = 40000 * ms
+numberOfInterations = 2
+
+# Save parameters
+saveDirectory = 'savedData/'
+saveName = 'simulationResults_'
+savePath = saveDirectory + saveName
 
 # Remove connections fron IN
 # del connections['IN']
@@ -91,7 +97,7 @@ for efferent in connections:
         afferentPop = globals()[afferent]
         globals()[efferent + '_' + afferent] = \
             Synapses(efferentPop, afferentPop, model=eqs,
-                on_post = '''Ipsp += Ipsp_syn''', dt=dt, method=integrationMethod)
+                on_post = '''Ipsp += Ipsp_syn''', method=integrationMethod)
 
         # Connect populations with synapses
         globals()[efferent + '_' + afferent].connect()
@@ -104,31 +110,44 @@ for efferent in connections:
             globals()[efferent + '_' + afferent].R = .001
             globals()[efferent + '_' + afferent].X = .001
 
+# Save state of network at t = 0
+store()
 
 #-------------------------------------------
-# Run simulation!
+# Run simulation over many iterations
 #-------------------------------------------
-BrianLogger.log_level_debug()
-seed(int(rand()*10000))
-run(simulationLength)
-# print("Time is %s" % (t))
 
+def extractResults():
+    populationData = {}
+    areasToPlot = ['RET', 'TCR', 'IN', 'TRN']
+    for index, pop in enumerate(areasToPlot):
+        populationData[pop] = globals()[pop+'data'].V[0]
+    populationData['times'] = globals()[pop+'data'].t/ms
+    return populationData
 
-#-------------------------------------------
-# Combine results into dictionary
-#-------------------------------------------
-populationData = {}
-areasToPlot = ['RET', 'TCR', 'IN', 'TRN']
-for index, pop in enumerate(areasToPlot):
-    populationData[pop] = globals()[pop+'data'].V[0]
-populationData['times'] = globals()[pop+'data'].t/ms
+def saveResults(iteration, savePath):
+    f = open(savePath + "%s.pkl" % (iteration) ,"wb")
+    pickle.dump(populationData, f)
+    f.close()
 
-#-------------------------------------------
-# Store results
-#-------------------------------------------
-f = open("simulationResults_new.pkl","wb")
-pickle.dump(populationData, f)
-f.close()
+# BrianLogger.log_level_debug()
+for iteration in range(numberOfInterations):
+    print(iteration)
+    
+    # Reset network to intial conditions
+    restore() 
 
-# Plot result
-plotResult(populationData)
+    # Randomise seed
+    seed(int(rand()*10000))
+
+    # Run simulation
+    run(simulationLength)
+
+    # Get results
+    populationData = extractResults()
+
+    # Save results
+    saveResults(iteration, savePath)
+
+# Analyse mean result from all iterations
+analyseManyResults(numberOfInterations, dataPath=savePath)
