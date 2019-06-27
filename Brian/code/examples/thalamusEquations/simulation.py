@@ -12,15 +12,12 @@ tau = 1 * ms
 integrationMethod = 'exact' # integrationMethod rk2, rk4
 km = 10 * ms # uF/cm2
 simulationLength = 40000 * ms
-numberOfInterations = 2
+numberOfInterations = 3
 
 # Save parameters
 saveDirectory = 'savedData/'
 saveName = 'simulationResults_'
 savePath = saveDirectory + saveName
-
-# Remove connections fron IN
-# del connections['IN']
 
 #-------------------------------------------
 # # Create populations (and recorders)
@@ -40,12 +37,12 @@ for pop in populations:
         stdInput = params['outputSTD']
         RET = NeuronGroup(1, threshold='t>0*10*ms',
             reset = 'V = %s + (randn()*%s)' % (meanInput, stdInput),
-            model = eqs, method=integrationMethod, dt=dt)
+            model = eqs, dt=dt, method=integrationMethod)
         RET.V = params['outputMean']
 
     else:
         eqs = getEquations(equations, [7, 8]) + '''
-            gLeak = ''' + str(params['gLeak']) + ''' : 1
+            gLeak = ''' + str(params['gLeak']) + '''  / 1 : 1
             Eleak = ''' + str(params['Eleak']) + ''' : 1'''
         globals()[pop] = NeuronGroup(1, threshold='t>0*10*ms', dt=dt, model=eqs, method=integrationMethod)
 
