@@ -31,7 +31,7 @@ def visualise_connectivity(S):
 ''' Equations taken from 'Theta and Alpha Oscillations Are Traveling Waves in the Human Neocortex'''
 
 # Define Kuramoto neurons
-def createKuramotoNeurons(N):
+def createKuramotoNeurons(N, direction):
     eqs = '''
         dTheta/dt = (freq + (kN * PIF)) * ms**-1 : 1
         PIF = .2 * (sin(ThetaPreInput - Theta) + sin(ThetaPostInput - Theta)): 1
@@ -42,16 +42,19 @@ def createKuramotoNeurons(N):
     '''
     neurons = NeuronGroup(N, eqs, threshold='True', method='rk4')
     neurons.Theta = '1-(randn()*2)'
-    neurons.freq = '.3+(.1*i)'
+    if direction=='upwards':
+        neurons.freq = '3*(1-(i/N))'
+    elif direction=='downwards':
+        neurons.freq = '3*(i/N)'
     trace = StateMonitor(neurons, ['Theta'], record=True)
     return neurons, trace
-neurons, trace = createKuramotoNeurons(N=20)
+neurons, trace = createKuramotoNeurons(N=20, direction='downwards')
 
 # Define synapses
 '''such that Theta_m in the post-synaptic neuron updates to Theta in the pre-synaptic neuron'''
-s = Synapses(neurons, neurons, on_pre = ''' ThetaPreInput_post = Theta_pre''', \
+s = Synapses(neurons, neurons, on_pre = '''ThetaPreInput_post = Theta_pre''', \
     on_post='''ThetaPostInput_pre = Theta_post''', method='euler')
-s.connect(condition='i-j==1')
+s.connect(condition='(i-j)==1')
 #visualise_connectivity(s)
 #s.delay = '(i-j)*10*ms'
 
@@ -109,6 +112,3 @@ def animate(t):
 myAnimation = animation.FuncAnimation(fig, animate, frames=len(trace.Theta[0]), interval=1, blit=True, repeat=False)
 # myAnimation.save('animation.gif', writer='imagemagick', fps=60)
 show()
-
-
-timeLine[0].set_xdata
