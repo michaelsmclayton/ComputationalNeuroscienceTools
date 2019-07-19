@@ -1,6 +1,30 @@
 from brian2 import *
 from matplotlib.pyplot import *
 import matplotlib.animation as animation
+from matplotlib import gridspec
+
+# We can visualise the above-defined connectivity using the function below
+def visualise_connectivity(S):
+    Ns = len(S.source) # Get number of source neurons
+    Nt = len(S.target) # Get number of target neurons
+    # Get figure
+    figure(figsize=(10, 4))
+    subplot(121) # Left subplot...
+    plot(zeros(Ns), arange(Ns), 'ok', ms=10)
+    plot(ones(Nt), arange(Nt), 'ok', ms=10)
+    for i, j in zip(S.i, S.j):
+        plot([0, 1], [i, j], '-k')
+    xticks([0, 1], ['Source', 'Target'])
+    ylabel('Neuron index')
+    xlim(-0.1, 1.1)
+    ylim(-1, max(Ns, Nt))
+    subplot(122)
+    plot(S.i, S.j, 'ok')
+    xlim(-1, Ns)
+    ylim(-1, Nt)
+    xlabel('Source neuron index')
+    ylabel('Target neuron index')
+    show()
 
 ''' Equations taken from 'Generative models of cortical oscillations- neurobiological
 implications of the Kuramoto model'''
@@ -8,39 +32,37 @@ implications of the Kuramoto model'''
 # Define Kuramoto neurons
 def createKuramotoNeurons(N):
     eqs = '''
-        dTheta_n/dt = (freq + (kN * PIF)) * ms**-1 : 1
-        PIF = -sin(angleDiff + beta) + (R*sin(2*angleDiff)) : 1
-        angleDiff = Theta_m - Theta_n : 1
-        R = .9 : 1
-        beta = .25 : 1
-        Theta_m : 1
+        dTheta/dt = (freq + (kN * PIF)) * ms**-1 : 1
+        PIF = .2 * (sin(ThetaPreInput - Theta) + sin(ThetaPostInput - Theta)): 1
+        ThetaPreInput : 1
+        ThetaPostInput : 1
         freq : 1
         kN : 1
     '''
     neurons = NeuronGroup(N, eqs, threshold='True', method='rk4')
-    neurons.Theta_n = '1-(randn()*2)'
-    neurons.freq = '1-(randn()*2)'
-    trace = StateMonitor(neurons, ['Theta_n'], record=True)
+    neurons.Theta = '1-(randn()*2)'
+    neurons.freq = '.3+(.1*i)'
+    trace = StateMonitor(neurons, ['Theta'], record=True)
     return neurons, trace
-neurons, trace = createKuramotoNeurons(N=15)
+neurons, trace = createKuramotoNeurons(N=20)
 
 # Define synapses
-'''such that Theta_m in the post-synaptic neuron updates to Theta_n in the pre-synaptic neuron'''
-s = Synapses(neurons, neurons, on_pre='Theta_m_post = Theta_n_pre', method='euler')
-s.connect(condition='i!=j')
-s.delay = '(i-j)*10*ms'
+'''such that Theta_m in the post-synaptic neuron updates to Theta in the pre-synaptic neuron'''
+s = Synapses(neurons, neurons, on_pre = ''' ThetaPreInput_post = Theta_pre''', \
+    on_post='''ThetaPostInput_pre = Theta_post''', method='euler')
+s.connect(condition='i-j==1')
+#visualise_connectivity(s)
+#s.delay = '(i-j)*10*ms'
 
 # Run and plot
 neurons.kN = 0
 run(10*ms, report='text')
-neurons.kN = 5
+neurons.kN = 12
 run(20*ms, report='text')
 neurons.kN = 0
 run(10*ms, report='text')
-figure(1, figsize=(12,4))
-for currentTrace in trace.Theta_n:
-    plot(trace.t/ms, cos(currentTrace))
-# show()
+# figure(1, figsize=(12,4))
+
 
 
 # -----------------------------------------------
@@ -48,27 +70,44 @@ for currentTrace in trace.Theta_n:
 # -----------------------------------------------
 
 # Initialise figure
-fig, ax = subplots()
+# fig = figure(figsize=(16, 3)) 
+# gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
+
+# ax0 = plt.subplot(gs[0])
+# for currentTrace in trace.Theta:
+#     ax0.plot(trace.t/ms, cos(currentTrace))
+#     yLimits = [-1, 1]
 
 # Get initial values
 neurons = []
-for neuron in range(len(trace.Theta_n)):
-    currentValue = cos(trace.Theta_n[neuron][0])
+fig = figure(1, figsize=(4,6))
+fig.set_facecolor((.8,.8,.8))
+gca().set_facecolor((.8,.8,.8))
+for neuron in range(len(trace.Theta)):
+    currentValue = cos(trace.Theta[neuron][0])
     currentColor = str((currentValue+1)/2)
-    currentNeuron = scatter(neuron+1, 1, s=500, color=currentColor)
+    currentNeuron = scatter(1, neuron+1, s=500, color=currentColor)
     neurons.append(currentNeuron)
+axis('off')
 
 # Define animation change
 def animate(t):
     newNeurons = []
     for index, neuron in enumerate(neurons):
-        currentValue = cos(trace.Theta_n[index][t])
+        currentValue = cos(trace.Theta[index][t])
         currentColor = str((currentValue+1)/2)
-        currentNeuron = scatter(index+1, 1, s=500, color=currentColor)
+        if (trace.t[t]>10*ms and trace.t[t]<30*ms):
+            edgeColor = 'red'
+        else:
+            edgeColor = None
+        currentNeuron = scatter(1, index+1, s=500, edgecolors=edgeColor, color=currentColor)
         newNeurons.append(currentNeuron)
     return newNeurons
 
 # create animation using the animate() function
-myAnimation = animation.FuncAnimation(fig, animate, frames=len(trace.Theta_n[0]), interval=1, blit=True, repeat=False)
+myAnimation = animation.FuncAnimation(fig, animate, frames=len(trace.Theta[0]), interval=1, blit=True, repeat=False)
+# myAnimation.save('animation.gif', writer='imagemagick', fps=60)
 show()
 
+
+timeLine[0].set_xdata
