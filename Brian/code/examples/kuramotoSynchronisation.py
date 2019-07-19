@@ -26,8 +26,9 @@ def visualise_connectivity(S):
     ylabel('Target neuron index')
     show()
 
-''' Equations taken from 'Generative models of cortical oscillations- neurobiological
-implications of the Kuramoto model'''
+# ''' Equations taken from 'Generative models of cortical oscillations- neurobiological
+# implications of the Kuramoto model'''
+''' Equations taken from 'Theta and Alpha Oscillations Are Traveling Waves in the Human Neocortex'''
 
 # Define Kuramoto neurons
 def createKuramotoNeurons(N):
