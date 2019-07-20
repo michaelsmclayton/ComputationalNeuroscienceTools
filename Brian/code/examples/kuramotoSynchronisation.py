@@ -31,10 +31,10 @@ def visualise_connectivity(S):
 ''' Equations taken from 'Theta and Alpha Oscillations Are Traveling Waves in the Human Neocortex'''
 
 # Define Kuramoto neurons
-def createKuramotoNeurons(N, direction):
+def createKuramotoNeurons(N, direction, basefrequency=3):
     eqs = '''
         dTheta/dt = (freq + (kN * PIF)) * ms**-1 : 1
-        PIF = .2 * (sin(ThetaPreInput - Theta) + sin(ThetaPostInput - Theta)): 1
+        PIF = .5 * (sin(ThetaPreInput - Theta)) : 1 # + sin(ThetaPostInput - Theta)): 1
         ThetaPreInput : 1
         ThetaPostInput : 1
         freq : 1
@@ -43,9 +43,9 @@ def createKuramotoNeurons(N, direction):
     neurons = NeuronGroup(N, eqs, threshold='True', method='rk4')
     neurons.Theta = '1-(randn()*2)'
     if direction=='upwards':
-        neurons.freq = '3*(1-(i/N))'
+        neurons.freq = '%s*(1-(i/N))' % (basefrequency)
     elif direction=='downwards':
-        neurons.freq = '3*(i/N)'
+        neurons.freq = '%s*(i/N)' % (basefrequency)
     trace = StateMonitor(neurons, ['Theta'], record=True)
     return neurons, trace
 neurons, trace = createKuramotoNeurons(N=20, direction='downwards')
@@ -59,12 +59,15 @@ s.connect(condition='(i-j)==1')
 #s.delay = '(i-j)*10*ms'
 
 # Run and plot
+preWindow = 10 * ms
+stimWindow = 10 * ms
+postWindow = 10 * ms
 neurons.kN = 0
-run(10*ms, report='text')
-neurons.kN = 12
-run(20*ms, report='text')
+run(preWindow, report='text')
+neurons.kN = 4
+run(stimWindow, report='text')
 neurons.kN = 0
-run(10*ms, report='text')
+run(postWindow, report='text')
 # figure(1, figsize=(12,4))
 
 
@@ -100,11 +103,11 @@ def animate(t):
     for index, neuron in enumerate(neurons):
         currentValue = cos(trace.Theta[index][t])
         currentColor = str((currentValue+1)/2)
-        if (trace.t[t]>10*ms and trace.t[t]<30*ms):
-            edgeColor = 'red'
-        else:
-            edgeColor = None
-        currentNeuron = scatter(1, index+1, s=500, edgecolors=edgeColor, color=currentColor)
+        edgeColor = None
+        if (trace.t[t]>preWindow and trace.t[t]<(preWindow+stimWindow)):
+            if index==(len(neurons)-1):
+                edgeColor = 'blue'
+        currentNeuron = scatter(1, index+1, s=500, linewidths=3, edgecolors=edgeColor, color=currentColor)
         newNeurons.append(currentNeuron)
     return newNeurons
 
