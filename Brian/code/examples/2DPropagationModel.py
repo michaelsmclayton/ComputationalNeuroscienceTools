@@ -46,14 +46,14 @@ print('Creating network...')
 N = groupLength**2
 tau = 10*ms
 eqs = '''
-    du/dt = (-u + ISyn)/tau + (.1*xi*tau**-0.5) : 1
-    dISyn/dt = -ISyn * ms**-1 : 1
+    du/dt = (-u + ISyn)/tau : 1
+    dISyn/dt = -ISyn * ms**-1 + (xi*tau**-0.5) : 1
 '''
 G = NeuronGroup(N, eqs, threshold='u>1', reset='u=0', method='euler')
 trace = StateMonitor(G, ['u', 'ISyn'], record=True)
 
 # Define synapses
-S = Synapses(G, G, on_pre='''ISyn += 3''', method='euler')
+S = Synapses(G, G, on_pre='''ISyn += 4''', method='euler')
 S.connect(condition='i!=j', p='getDistance(i,j)') # Use connection probability instead?
 # S = Synapses(G, G, on_pre='''ISyn += 3*getDistance(i,j)''', multisynaptic_index='synapse_number', method='euler')
 # S.connect(condition='i!=j')
@@ -87,7 +87,7 @@ neuronPlots = []
 for neuron in range(trace.u.shape[0]):
     # if neuron==sourceNeuron: continue
     currentColor = str(trace.u[neuron][0])
-    neuronPlots.append(scatter(locations[neuron][0], locations[neuron][1], color=currentColor, s=400))
+    neuronPlots.append(scatter(locations[neuron][0], locations[neuron][1], color=currentColor, s=500))
 axis('off')
 
 # Loop figure
