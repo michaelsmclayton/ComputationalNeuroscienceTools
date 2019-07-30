@@ -1,12 +1,12 @@
 from brian2 import *
 from matplotlib.pyplot import *
-matplotlib.use("Agg")
+# matplotlib.use("Agg")
 import matplotlib.animation as animation
 import numpy as np
 
 # Define simulation parameters
-simulationLength = 500*ms
-neuronType = 'Kuramoto' # 'LIF'
+neuronType = 'LIF' # 'Kuramoto', 'LIF'
+BrianLogger.suppress_hierarchy('brian2.codegen') # suppress Brian warnings
 useVariableDelays = True
 groupLength = 20
 N = groupLength**2
@@ -68,17 +68,22 @@ print('Creating network...')
 if neuronType == 'LIF': 
     tau = 10*ms
     eqs = '''
-        du/dt = (-u + ISyn)/tau : 1
-        dISyn/dt = -ISyn * ms**-1 + (xi*tau**-0.5) : 1
+        du/dt = (-u + ISyn)/tau + (.1*xi*tau**-0.5) : 1
+        dISyn/dt = -ISyn * ms**-1 : 1
     '''
     G = NeuronGroup(N, eqs, threshold='u>1', reset='u=0', method='euler')
+    G.u = '.5*rand()'
     trace = StateMonitor(G, ['u', 'ISyn'], record=True)
     S = Synapses(G, G, on_pre='''ISyn += 4''', method='euler')
+    # Connect random input
+    randomInput = PoissonGroup(50, np.arange(50)*Hz + 25*Hz)
+    Sinput = Synapses(randomInput, G[sourceNeuron], on_pre = '''ISyn += .6''', method='euler')
+    Sinput.connect()
 
 # Define Kuramoto neurons and synapses
 if neuronType == 'Kuramoto':
     eqs = '''
-        dTheta/dt = ((freq + (kN * PIF)) * ms**-1) : 1 # + (sigma*xi*2*ms**-0.5) : 1
+        dTheta/dt = ((freq + (kN * PIF)) * ms**-1) : 1
         PIF = .5 * (sin(ThetaPreInput - Theta)) : 1
         ThetaPreInput : 1
         freq : 1
@@ -102,22 +107,20 @@ if useVariableDelays==True:
         # 1/getDistance(currentI, currentJ, delayGaussianSigma) * ms
         # euclideanDistance(currentI, currentJ) / 3.5*ms
 
-# # Connect random input
-# randomInput = PoissonGroup(50, np.arange(50)*Hz + 25*Hz)
-# Sinput = Synapses(randomInput, G[sourceNeuron], on_pre = '''ISyn += .6''', method='euler')
-# Sinput.connect()
-
 # Run simulation
 print('Running simulation...')
 duration = 10*ms
-G.kN = 3
-run(duration, report='text')
-G.kN = 0
-run(duration*6, report='text')
-G.kN = 3
-run(duration, report='text')
-G.kN = 0
-run(duration*6, report='text')
+if neuronType == 'Kuramoto':
+    G.kN = 3
+    run(duration, report='text')
+    G.kN = 0
+    run(duration*6, report='text')
+    G.kN = 3
+    run(duration, report='text')
+    G.kN = 0
+    run(duration*6, report='text')
+if neuronType == 'LIF':
+    run(duration*10, report='text')
 
 
 # -------------------------------------------
@@ -125,7 +128,7 @@ run(duration*6, report='text')
 # -------------------------------------------
 
 # Animation
-fig = figure(2, figsize=(4,4))
+fig = figure(2, figsize=(6,6))
 fig.set_facecolor((.8,.8,.8))
 gca().set_facecolor((.8,.8,.8))
 
@@ -147,12 +150,12 @@ def updatefig(t):
     if t > 10:
         fig.set_facecolor((0,0,0))
     return im,
-thetaMatrix = cos(convertToMatrix(trace.Theta, groupLength))
+thetaMatrix = convertToMatrix(traceOfInterest, groupLength)
 im = imshow(thetaMatrix[:,:,0], animated=True)
 im.set_cmap('bone')
-ani = animation.FuncAnimation(fig, updatefig, frames=traceOfInterest.shape[1], interval=50, blit=True)
-ani.save('lines.mp4', writer=writer)
-# show()
+ani = animation.FuncAnimation(fig, updatefig, frames=traceOfInterest.shape[1], interval=1, blit=True)
+# ani.save('travellingWaves_%s.mp4' % (neuronType), writer=writer)
+show()
 
 
 
