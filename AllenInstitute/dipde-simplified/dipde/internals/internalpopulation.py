@@ -80,6 +80,7 @@ class InternalPopulation(object):
         
         # Store away inputs:
         self.tau_m = tau_m
+        self.t = 0
         self.v_min = v_min
         self.v_max = v_max
         self.dv = dv
@@ -140,6 +141,7 @@ class InternalPopulation(object):
         self.update_total_input_dict()
         self.update_propability_mass()
         self.update_firing_rate()
+        self.plot_probability_distribution()
         if self.record == True: self.update_firing_rate_recorder()
         
     def initialize_edges(self):
@@ -288,6 +290,7 @@ class InternalPopulation(object):
             ax = fig.add_subplot(1, 1, 1)
             
         ax.plot(self.edges[:-1], self.pv)
+        plt.savefig('./singlepop0.png')
         return ax
         
 

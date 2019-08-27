@@ -61,4 +61,10 @@ def example(show=False, save=True):
     
     return i1.t_record, i1.firing_rate_record
     
-if __name__ == "__main__": example()        # pragma: no cover
+if __name__ == "__main__":
+    result = example()        # pragma: no cover
+
+
+i3 = InternalPopulation(v_min=0, v_max=.02, dv=.001, update_method='exact', approx_order=None, tol=1e-8)
+
+verbose=False, update_method='exact', approx_order=None, tol=1e-8
