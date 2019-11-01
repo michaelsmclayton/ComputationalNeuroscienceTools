@@ -1,5 +1,3 @@
-
-
 # ---------------------------------
 # Import dependencies
 # ---------------------------------
@@ -7,6 +5,7 @@
 import os
 import numpy as np
 import pandas as pd
+from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
 import pprint; objectPrint = pprint.PrettyPrinter(depth=11).pprint
 from allensdk.brain_observatory.ecephys.ecephys_project_cache import EcephysProjectCache
@@ -35,18 +34,19 @@ brain_observatory_type_sessions.tail()
 objectPrint(sessions)
 
 # Download data from an arbitrary session
+print('Getting session data')
 session_id = 791319847
 session = cache.get_session_data(session_id)
-
 
 # ---------------------------------
 # Get LFP data
 # ---------------------------------
 
 # List the probes recorded from in this session
-session.probes.head()
+# session.probes.head()
 
 # load up the lfp from one of the probes. This returns an xarray dataarray
+print('Getting LFP data')
 probe_id = session.probes.index.values[0]
 lfp = session.get_lfp(probe_id)
 # print(lfp)
@@ -136,3 +136,32 @@ plt.show()
 #     print(endTime-startTime)
 #     showLFP(startTime, endTime)
 # plt.show()
+
+probes = cache.get_probes()
+probes.loc[probes.index==probe_id]
+
+# --------------------------------------
+# View probe location
+# --------------------------------------
+channels = cache.get_channels()
+channelsOfInterest = channels.loc[channels.ecephys_probe_id==probe_id]
+ant_post = channelsOfInterest.anterior_posterior_ccf_coordinate
+dors_vent = channelsOfInterest.dorsal_ventral_ccf_coordinate
+left_right = channelsOfInterest.left_right_ccf_coordinate
+fig = plt.figure()
+ax = plt.axes(projection='3d')
+ax.plot3D(ant_post, left_right, dors_vent, 'gray')
+ax.set_xlabel('ant_post')
+ax.set_ylabel('left_right')
+ax.set_zlabel('dors_vent')
+plt.show()
+
+## Look at anatomical images
+import skimage.io as io
+img = io.imread('./atlasVolume/atlasVolume.mhd', plugin='simpleitk')
+#img = io.imread('./P56_Mouse_annotation/annotation.mhd', plugin='simpleitk')
+fig, ax = plt.subplots()
+dataToPlot = img[:,:,300].T
+# Rescale image to 25um per pixel
+plt.imshow(dataToPlot, extent=[0, dataToPlot.shape[1]*25, dataToPlot.shape[0]*25, 0])
+plt.show()
