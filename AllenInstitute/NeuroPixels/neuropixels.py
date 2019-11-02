@@ -37,7 +37,7 @@ sessions = cache.get_session_table()
 # brain_observatory_type_sessions.tail()
 
 # Download data from an arbitrary session
-print('Getting session data')
+print('Getting session data...')
 session_id = 791319847
 session = cache.get_session_data(session_id)
 
@@ -51,7 +51,7 @@ if analyseLFP==True:
     # session.probes.head()
 
     # load up the lfp from one of the probes. This returns an xarray dataarray
-    print('Getting LFP data')
+    print('Getting LFP data...')
     probe_id = session.probes.index.values[0]
     lfp = session.get_lfp(probe_id)
     # print(lfp)
@@ -175,20 +175,20 @@ def updatefig(t):
 # Plot single probe
 fig, axes = plt.subplots(1,2,sharex=True)
 fig.set_size_inches(10, 5)
-title = fig.suptitle('', fontsize=12)
+title = fig.suptitle('', y=.85, fontsize=12)
 # Create coronal plot
-halfwayIndex = int(len(ant_post)/2)
-anteriorPosteriorSlice = int(ant_post[halfwayIndex]/25)
+halfwayIndex = int(len(ant_post_lfp)/2)
+anteriorPosteriorSlice = int(ant_post_lfp[halfwayIndex]/25)
 dataToPlot = img[:,:,anteriorPosteriorSlice].T
 '''x25 to rescale image to 25um per pixel'''
 axes[0].imshow(dataToPlot, cmap='gray', extent=[0, dataToPlot.shape[1]*25, dataToPlot.shape[0]*25, 0])
-scat1 = axes[0].scatter(left_right, dors_vent, s=4, c=lfp[0,:].values)
+scat1 = axes[0].scatter(left_right_lfp, dors_vent_lfp, s=4, c=lfp[0,:].values)
 axes[0].set_xlim([0, dataToPlot.shape[1]*25])
 # Create saggital plot
-leftRightSlice = int(left_right[halfwayIndex]/25)
+leftRightSlice = int(left_right_lfp[halfwayIndex]/25)
 dataToPlot = img[leftRightSlice,:,:]
 axes[1].imshow(dataToPlot, cmap='gray', extent=[0, dataToPlot.shape[1]*25, dataToPlot.shape[0]*25, 0])
-scat2 = axes[1].scatter(ant_post, dors_vent, s=4, c=lfp[0,:].values)
+scat2 = axes[1].scatter(ant_post_lfp, dors_vent_lfp, s=4, c=lfp[0,:].values)
 ani = FuncAnimation(fig, updatefig, frames=range(1, lfp.shape[0], 10), interval=1)
 plt.show()
 
