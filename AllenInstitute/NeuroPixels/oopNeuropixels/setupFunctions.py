@@ -6,11 +6,11 @@ def getSummaryData(dataDirectory):
     manifest_path = os.path.join(dataDirectory, "manifest.json")
     cache = EcephysProjectCache.from_warehouse(manifest=manifest_path)
     sessions = cache.get_session_table()
-    channels = cache.get_channels()
-    probes = cache.get_probes()
-    return cache, sessions, channels, probes
+    return cache, sessions
 
 def getSessionData(cache, session_id):
     print('Getting session...')
     session = cache.get_session_data(session_id)
-    return session
+    probes = session.probes
+    channels = session.channels
+    return session, probes, channels
