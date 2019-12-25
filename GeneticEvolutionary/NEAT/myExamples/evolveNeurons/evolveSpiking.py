@@ -5,11 +5,13 @@ import neat
 import pprint; op = pprint.PrettyPrinter(depth=6).pprint
 import sys; sys.path.append('..')
 import matplotlib.pyplot as plt
+from scipy.stats import linregress
+from scipy.spatial import distance
 
 # Set desired firing rate
-desiredFiringRate = 17
-desiredISI = 1000/desiredFiringRate
+desiredFiringRate = 25
 generations = 15
+desiredISI = 1000/desiredFiringRate
 
 # Load configuration
 local_dir = os.path.dirname(__file__)
@@ -37,15 +39,22 @@ def getISIConsistency(spikes): # Attempt to reward consistent ISI times
     spikes = np.array(spikes)
     spikeTimes = np.where(spikes==1.0)
     isis = []
-    for i in range(len(spikeTimes)-1):
-        spikeTimes.append(spikeTimes[i+1]-spikeTimes[i])
-    return np.mean(spikeTimes) - np.median(spikeTimes)
+    for i in range(len(spikeTimes[0])-1):
+        isis.append(spikeTimes[0][i+1]-spikeTimes[0][i])
+    if len(isis)<1:
+        return 100
+    diffs = [np.abs(x-desiredISI) for x in isis]
+    return np.mean(diffs)/1000 + np.var(diffs)/1000
+
+def getFiringRateCost(spikes):
+    firingRateCost = (np.abs(np.sum(spikes)-desiredFiringRate))
+    isiConsistencyCost = getISIConsistency(spikes)
+    cost = firingRateCost + isiConsistencyCost
+    return cost
 
 def eval_genome(genome, config):
-    spikes, vValues = assessGenomeFitness(genome, config)
-    firingRateCost = (np.abs(np.sum(spikes)-desiredFiringRate))
-    isiConsistencyCost = (getISIConsistency(spikes)/1000)
-    return 100 - firingRateCost - isiConsistencyCost
+    spikes, vValues = assessGenomeFitness(genome, config) 
+    return 100 - getFiringRateCost(spikes)
 
 def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
@@ -62,8 +71,8 @@ def assessGenomeFitness(genome, config):
     # Run simulation
     dt = .25
     vValues = []; firedValues = []
-    for i in range(1200):
-        if (i > 200 and i < 1000):
+    for i in range(1400):
+        if (i > 200 and i < 1200):
             net.neurons[0].current = 20.0
         else:
             net.neurons[0].current = 0.0
@@ -74,12 +83,32 @@ def assessGenomeFitness(genome, config):
     # Return firing rate
     return firedValues, vValues
 
+# Run evolution
 winner = pop.run(eval_genomes, n=generations)
+
+# Get results
 spikes, vValues = assessGenomeFitness(winner, config)
 print('Desired firing rate: %s, Actual firing rate: %s' % (desiredFiringRate, np.sum(spikes)))
 print('a: %s, b: %s, c: %s, d: %s, ' % (winner.nodes[0].a, winner.nodes[0].b, winner.nodes[0].c, winner.nodes[0].d))
-plt.plot(vValues); plt.show()
+plt.plot(vValues)
+# yValues = plt.gca().get_ylim()
+# for i in range(200,1200,100):
+#     plt.plot([i,i], yValues)
+plt.show()
 
 
 # import visualize
 # visualize.draw_net(config, genome, filename='hello', view=True)
+
+# # Functions to evolve neurons with a given voltage trace
+# # Load template spiking
+# templateVoltageTrace = np.load('vValues.npy')
+# def getCorrelationCoefficientCost(vValues, templateVoltageTrace):
+#     unitVector = vValues / np.linalg.norm(vValues)
+#     slope, intercept, r_value, p_value, std_err = linregress(unitVector, templateVoltageTrace)
+#     return (1-r_value)
+# # Plot results
+# unitVectorCreated = vValues / np.linalg.norm(vValues)
+# plt.plot(unitVectorCreated)
+# plt.plot(templateVoltageTrace, 'k')
+# plt.show()
