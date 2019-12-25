@@ -51,37 +51,37 @@ num_inputs              = 1
 num_outputs             = 1
 
 # node parameters for regular spiking
-a_init_mean      = 0.02
+a_init_mean      = 0.06
 a_init_stdev     = 0.04
-a_max_value      = .3
-a_min_value      = 0.0001
-a_mutate_power   = 0.0
-a_mutate_rate    = 0.0
+a_max_value      = 0.15
+a_min_value      = 0.01
+a_mutate_power   = 0.1
+a_mutate_rate    = 0.02
 a_replace_rate   = 0.0
 
-b_init_mean      = 0.05
-b_init_stdev     = 0.04
+b_init_mean      = 0.2
+b_init_stdev     = 0.1
 b_max_value      = 0.25
 b_min_value      = 0.01
-b_mutate_power   = 0.0
-b_mutate_rate    = 0.0
-b_replace_rate   = 0.0
+b_mutate_power   = 0.1
+b_mutate_rate    = 0.1
+b_replace_rate   = 0.1
 
 c_init_mean      = -65.0
 c_init_stdev     = 4.0
 c_max_value      = -30.0
 c_min_value      = -75.0
-c_mutate_power   = 0.0
-c_mutate_rate    = 0.0
-c_replace_rate   = 0.0
+c_mutate_power   = 0.1
+c_mutate_rate    = 0.1
+c_replace_rate   = 0.1
 
 d_init_mean      = 4.0
 d_init_stdev     = 2.0
-d_max_value      = 8
+d_max_value      = 10
 d_min_value      = .05
-d_mutate_power   = 0.0
-d_mutate_rate    = 0.0
-d_replace_rate   = 0.0
+d_mutate_power   = 0.1
+d_mutate_rate    = 0.1
+d_replace_rate   = 0.1
 
 # connection weight options
 weight_init_mean        = 0.0
