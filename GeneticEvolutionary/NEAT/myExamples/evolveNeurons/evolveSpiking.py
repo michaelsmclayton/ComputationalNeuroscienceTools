@@ -7,8 +7,9 @@ import sys; sys.path.append('..')
 import matplotlib.pyplot as plt
 
 # Set desired firing rate
-desiredFiringRate = 4
+desiredFiringRate = 17
 desiredISI = 1000/desiredFiringRate
+generations = 15
 
 # Load configuration
 local_dir = os.path.dirname(__file__)
@@ -32,17 +33,19 @@ pop.add_reporter(stats)
 # ----------------------------------------
 # Define functions to assess genome
 # ----------------------------------------
-# def getAverageTimeBetweenSpikes(spikes): # Attempt to reward consistent ISI times
-#     spikes = np.array(spikes)
-#     spikeTimes = np.where(spikes==1.0)
-#     isis = []
-#     for i in range(len(spikeTimes)-1):
-#         spikeTimes.append(spikeTimes[i+1]-spikeTimes[i])
-#     return np.mean(spikeTimes)
+def getISIConsistency(spikes): # Attempt to reward consistent ISI times
+    spikes = np.array(spikes)
+    spikeTimes = np.where(spikes==1.0)
+    isis = []
+    for i in range(len(spikeTimes)-1):
+        spikeTimes.append(spikeTimes[i+1]-spikeTimes[i])
+    return np.mean(spikeTimes) - np.median(spikeTimes)
 
 def eval_genome(genome, config):
     spikes, vValues = assessGenomeFitness(genome, config)
-    return 100 - (np.abs(np.sum(spikes)-desiredFiringRate)) # - (getAverageTimeBetweenSpikes(spikes)-desiredISI)
+    firingRateCost = (np.abs(np.sum(spikes)-desiredFiringRate))
+    isiConsistencyCost = (getISIConsistency(spikes)/1000)
+    return 100 - firingRateCost - isiConsistencyCost
 
 def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
@@ -61,7 +64,7 @@ def assessGenomeFitness(genome, config):
     vValues = []; firedValues = []
     for i in range(1200):
         if (i > 200 and i < 1000):
-            net.neurons[0].current = 15.0
+            net.neurons[0].current = 20.0
         else:
             net.neurons[0].current = 0.0
         vValues.append(net.neurons[0].v)
@@ -71,12 +74,12 @@ def assessGenomeFitness(genome, config):
     # Return firing rate
     return firedValues, vValues
 
-winner = pop.run(eval_genomes, n=10)
+winner = pop.run(eval_genomes, n=generations)
 spikes, vValues = assessGenomeFitness(winner, config)
 print('Desired firing rate: %s, Actual firing rate: %s' % (desiredFiringRate, np.sum(spikes)))
 print('a: %s, b: %s, c: %s, d: %s, ' % (winner.nodes[0].a, winner.nodes[0].b, winner.nodes[0].c, winner.nodes[0].d))
 plt.plot(vValues); plt.show()
 
 
-import visualize
+# import visualize
 # visualize.draw_net(config, genome, filename='hello', view=True)
