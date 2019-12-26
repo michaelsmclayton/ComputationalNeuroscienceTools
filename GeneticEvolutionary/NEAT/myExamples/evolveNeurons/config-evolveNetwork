@@ -2,19 +2,19 @@
 
 [NEAT]
 fitness_criterion     = max
-fitness_threshold     = 100
-pop_size              = 100
+fitness_threshold     = 10000000
+pop_size              = 20
 reset_on_extinction   = False
 
 [IZGenome]
 # node bias options
 bias_init_mean          = 0.0
-bias_init_stdev         = 0.0
-bias_max_value          = 0.0
-bias_min_value          = 0.0
-bias_mutate_power       = 0.0
-bias_mutate_rate        = 0.0
-bias_replace_rate       = 0.0
+bias_init_stdev         = 20.0
+bias_max_value          = 100.0
+bias_min_value          = -100.0
+bias_mutate_power       = 5.0
+bias_mutate_rate        = 0.7
+bias_replace_rate       = 0.1
 
 # [IZGenome]
 # # node bias options
@@ -38,17 +38,17 @@ conn_delete_prob        = 0.2
 enabled_default         = True
 enabled_mutate_rate     = 0.01
 
-feed_forward            = False
+feed_forward            = True
 initial_connection      = full
 
 # node add/remove rates
-node_add_prob           = 0.1
-node_delete_prob        = 0.1
+node_add_prob           = 0.0
+node_delete_prob        = 0.0
 
 # network parameters
 num_hidden              = 0
 num_inputs              = 1
-num_outputs             = 100
+num_outputs             = 10
 
 # node parameters for regular spiking (stds; a:.01; c:20)
 a_init_mean      = 0.02
@@ -57,31 +57,31 @@ a_max_value      = 1
 a_min_value      = -1
 a_mutate_power   = 0.1
 a_mutate_rate    = 0.02
-a_replace_rate   = 0.0
+a_replace_rate   = 0.02
 
 b_init_mean      = 0.2
 b_init_stdev     = 0.01
-b_max_value      = 0.25
-b_min_value      = 0.01
+b_max_value      = 1
+b_min_value      = -1
 b_mutate_power   = 0.1
-b_mutate_rate    = 0.1
-b_replace_rate   = 0.1
+b_mutate_rate    = 0.02
+b_replace_rate   = 0.02
 
 c_init_mean      = -65.0
 c_init_stdev     = 20
 c_max_value      = 200
 c_min_value      = -200
 c_mutate_power   = 0.1
-c_mutate_rate    = 0.1
-c_replace_rate   = 0.1
+c_mutate_rate    = 0.02
+c_replace_rate   = 0.02
 
 d_init_mean      = 8.0
 d_init_stdev     = 1.0
 d_max_value      = 100
 d_min_value      = -100
 d_mutate_power   = 0.1
-d_mutate_rate    = 0.1
-d_replace_rate   = 0.1
+d_mutate_rate    = 0.02
+d_replace_rate   = 0.02
 
 # connection weight options
 weight_init_mean        = 0.0
