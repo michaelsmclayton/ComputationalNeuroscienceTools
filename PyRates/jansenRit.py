@@ -1,9 +1,11 @@
 from pyrates.frontend import OperatorTemplate, NodeTemplate, CircuitTemplate
+from brian2 import *
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
 # https://github.com/pyrates-neuroscience/PyRates/blob/master/documentation/Tutorial_PyRates_Basics.ipynb
+
 
 # ---------------------------------------------------
 # Define mathematical operators
@@ -11,31 +13,52 @@ import numpy as np
 
 '''Via these two operators, each population of the Jansen-Rit circuit can be defined'''
 
-{'m_out': {'default': 'output'}, 'PSP': {'default': 'input'}, 'm_max': {'default': 5.0}, 'r': {'default': 560.0}, 'V_thr': {'default': 0.006}}
+# # Parameters
+# def returnProcessedParameters(m_max, r, V_thr, h, tau):
+#     m_max = m_max * ms
+#     r =  (1/r) / mV
+#     V_thr = V_thr / mV
+#     h = h / mV
+#     tau = tau * ms
+#     return m_max, r, V_thr, h, tau
 
-# Define potential-to-rate operator (PRO)
+# # Define parameters
+# m_max = 5 * Hz
+# r = .56 * mV ** -1
+# V_thr = 6 * mV
+# h = 14 * mV
+# tau = 100 * second **-1
+# m_max, r, V_thr, h, tau = returnProcessedParameters(m_max, r, V_thr, h, tau)
+
+# Parameters
+m_max, r, V_thr, h, tau = 5, 560.0, .006, .00325, .01
+
+
+# Define potential-to-rate operator (PRO) = (VOLTAGE TO RATE; SIGMOIDAL TRANSFER FUNCTION)
 PRO = OperatorTemplate(name='PRO', path=None, 
     equations = ['m_out = m_max / (1. + exp(r*(V_thr - PSP)))'],
     variables = {
         'm_out': {'default': 'output'}, # average firing rate
         'PSP': {'default': 'input'}, # membrane potential
-        'm_max': {'default': 5.0}, # maximum firing rate
-        'r': {'default': 560.0}, # firing threshold variance
-        'V_thr': {'default': 0.006}}, # average firing threshold
+        'm_max': {'default': m_max}, # maximum firing rate
+        'r': {'default': r}, # firing threshold variance
+        'V_thr': {'default': V_thr}}, # average firing threshold
     description="")
 
 # Define rate-to-potential operator (RPO)
 RPO_e = OperatorTemplate(name='RPO_e', path=None,
     equations = [ 'd/dt * PSP = PSP_t',
-                  'd/dt * PSP_t =  h/tau * m_in - (1./tau)^2. * PSP - 2. * 1./tau * PSP_t'],
+                  'd/dt * PSP_t =  (h/tau*m_in) - 2.*(1./tau)*PSP_t - ((1./tau)^2.)*PSP'],
     variables = {
-        'h': {'default': 0.00325}, # efficacy of the synapse
-        'tau': {'default': 0.01}, # time-scale of the synapse
+        'h': {'default': h}, # efficacy of the synapse
+        'tau': {'default': tau}, # time-scale of the synapse
         'm_in': {'default': 'input'}, # input firing rate
         'PSP': {'default': 'output'}, # average post-synaptic potential
         'PSP_t': {'default': 'variable'}},
     description="")
 
+# PRO = OperatorTemplate.from_yaml("model_templates.jansen_rit.simple_jansenrit.PRO")
+# RPO_e = OperatorTemplate.from_yaml("model_templates.jansen_rit.simple_jansenrit.RPO_e")
 
 # ---------------------------------------------------
 # Build the Jansen-Rit circuit (JRC)
@@ -67,7 +90,7 @@ pc = NodeTemplate(name='PC', path=None, operators=[RPO_e_pc, RPO_i, PRO]) # Pyra
 circuit = CircuitTemplate(
     name="JRC", nodes={'IIN': iin, 'EIN': ein, 'PC': pc},
     edges = [ \
-        ["PC/PRO/m_out", "IIN/RPO_e/m_in", None, {'weight': 33.75}], # , 'delay': 10}]
+        ["PC/PRO/m_out", "IIN/RPO_e/m_in", None, {'weight': 33.75}],
         ["PC/PRO/m_out", "EIN/RPO_e/m_in", None, {'weight': 135.}],
         ["EIN/PRO/m_out", "PC/RPO_e_pc/m_in", None, {'weight': 108.}],
         ["IIN/PRO/m_out", "PC/RPO_i/m_in", None, {'weight': 33.75}]],
@@ -97,46 +120,35 @@ equations can be calculated more efficiently. A such reorganised network consist
 of 3 nodes, because the EIN and IIN nodes actually contain the same equations"""
 # compute_graph.nodes = NodeView(('vector_node0', 'vector_node1'))
 
-# Run simulation
-ext_input = np.random.uniform(120., 320., (int(T/dt), 1)) # Define external input
-results = compute_graph.run(simulation_time = T,
-                            outputs={
-                                'V_PC': 'PC/RPO_e_pc/PSP',
-                                'V_EIN': 'EIN/RPO_e/PSP',
-                                'V_IIN': 'IIN/RPO_e/PSP'},
-                            inputs={'PC/RPO_e_pc/u': ext_input}
-                            )#
-                            # outputs={'V_PC': 'PC/OBS/V',
-                            #          'V_EIN': 'EIN/RPO_e/PSP',
-                            #          'V_IIN': 'IIN/RPO_e/PSP'}, 
-                            # inputs={'PC/RPO_e_pc/u': ext_input})
+# Define external input
+simulationLength = int(T/dt)
+random_input = np.random.uniform(120., 320., (simulationLength, 1)) # Define external input
+ext_input = random_input # np.zeros(shape=[1,simulationLength])
+for i in range(simulationLength):
+    ext_input[i] = i/20 # ext_input[i] * (i/simulationLength) + (i*.05)
 
+# Run simulation
+results = compute_graph.run(
+    simulation_time = T,
+    outputs={'V_PC': 'PC/RPO_e_pc/PSP',
+            'V_EIN': 'EIN/RPO_e/PSP',
+            'V_IIN': 'IIN/RPO_e/PSP'}, 
+    inputs={'PC/RPO_e_pc/u': ext_input})
 
 # Plot results
-from pyrates.utility import plot_timeseries, plot_psd
+from pyrates.utility import plot_timeseries, plot_psd, time_frequency
+times = np.linspace(0,10,10000)
 plt.figure(figsize=(20,10))
-ax1 = plt.subplot(2,1,1)
+plt.subplot(3,1,1)
+plt.plot(times, ext_input)
+plt.xlim(0,10)
+ax1 = plt.subplot(3,1,2)
 plot_timeseries(results, ax=ax1, ylabel='PSP in V')
-ax2 = plt.subplot(2,1,2)
-plot_psd(results, ax=ax2)
+plt.xlim(0,10)
+ax2 = plt.subplot(3,1,3)
+# plot_psd(results, ax=ax2)
+timeFreq = time_frequency(results, freqs=np.arange(3,30,1))
+plt.pcolormesh(timeFreq[0], alpha=1, cmap="binary")
+plt.ylim(0,15)
+plt.ylabel('Frequency (Hz)')
 plt.show()
-
-
-
-
-# import sympy as sym
-# # Define equation in sympy
-# m_out,m_max,V_thr,r,V  = sym.symbols('m_out,m_max,V_thr,r,V')
-# """
-# m_out : average firing rate
-# m_max : maximum firing rate
-# V_thr : average firing threshold
-# r : firing threshold variance
-# V : membrane potential
-# """
-# sigFunc = sym.Eq(m_out, m_max / (1 + sym.exp(r*(V_thr-V))))
-# sym.latex(sigFunc)
-
-# T = 10.0
-# dt = 0.001
-# compute_graph = circuit.compile(vectorization="nodes", dt=dt, backend="numpy")
