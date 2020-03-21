@@ -4,4 +4,4 @@ Data taken from the Visual Coding - Neuropixels <a href="https://portal.brain-ma
 
 <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/blob/master/AllenInstitute/NeuroPixels/neuropixels.py">neuropixels.py</a>
 
-<img src="./exampleGifs/neuroPixelsProbeActivity.gif"/>
+<img src="./imgs/neuroPixelsProbeActivity.gif"/>
