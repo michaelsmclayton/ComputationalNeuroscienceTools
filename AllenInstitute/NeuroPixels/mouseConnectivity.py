@@ -49,11 +49,8 @@ template, template_info = mcc.get_template_volume()
 annot, annot_info = mcc.get_annotation_volume()
 
 # Plot projection density
+colourMap = 'gist_gray'
 img = io.imread('./atlasVolume/atlasVolume.mhd', plugin='simpleitk')
-plt.imshow(img[:,:,296].T, cmap='hot', aspect='equal')
-plt.imshow(projd_mip, cmap='hot', alpha=.5, aspect='equal')
+plt.imshow(img[:,:,296].T, cmap=colourMap, aspect='equal')
+plt.imshow(projd_mip, cmap='gist_heat', alpha=.5, aspect='equal')
 plt.show()
-
-
-alpha = 
-colors[..., -1] = alphas
