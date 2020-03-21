@@ -5,6 +5,8 @@ from mpl_toolkits import mplot3d
 from numpy.random import normal, uniform
 from scipy.spatial import distance
 
+# Think about "Kent distribution" for directional probability distribitions
+
 # Parameters
 numberOfNeurons = 4
 populationSize = 10
@@ -17,15 +19,15 @@ pi = np.pi
 # -----------------------------------------
 
 # Make neurons
-def makeNeuron(x, y):
+def makeNeuron(x=None, y=None, nSynapses=None):
     return {
-        'xPos': x, # uniform(spaceRange[0],spaceRange[1]),
-        'yPos': y, # uniform(spaceRange[0],spaceRange[1]),
-        'nSynapses': 50, # int(uniform(50,100)),
-        'angleHomogeneity': uniform(1,60),
-        'meanAngle': uniform(0, pi),
+        'xPos': x if x != None else uniform(spaceRange[0],spaceRange[1]),
+        'yPos': y if x != None else uniform(spaceRange[0],spaceRange[1]),
+        'nSynapses': nSynapses if nSynapses != None else int(uniform(50, 100)),
+        'angleHomogeneity': uniform(1, 60),
+        'meanAngle': uniform(0, 2*pi),
         'angleDistScale': 1, # divides the distribution
-        'distanceSTD': normal(1.0,.3), 
+        'distanceSTD': normal(1.0, .3), 
     }
 
 # Get connections
@@ -48,7 +50,6 @@ def getConnections(neuron):
         xEnd = neuron['xPos'] + (np.cos(synapseAngles[s])*synapseDistances[s])
         yEnd = neuron['yPos'] + (np.sin(synapseAngles[s])*synapseDistances[s])
         synapses.append([[neuron['xPos'], xEnd], [neuron['yPos'], yEnd]])
-
     return synapses
 
 # -----------------------------------------
