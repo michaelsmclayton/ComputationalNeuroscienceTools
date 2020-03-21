@@ -17,13 +17,14 @@ import gzip
 # Terrence J. Sejnowski, Ralph J Greenspan bioRxiv 033803; doi: https://doi.org/10.1101/033803"
 
 # Filenames
-imageNIIPath = "./data/GOL1_psfproj_dff_kf.nii" # AOL1_psfproj_dff_kf GOL6_psfproj_dff_kf
-imageStimInfo = "./data/GOL1FlashOdor.mat" # AOL1FlashOdor GOL6FlashOdor
+imageNIIPath = "./data/GOL1_psfproj_dff_kf.nii" # AOL1_psfproj_dff_kf GOL1_psfproj_dff_kf GOL6_psfproj_dff_kf
+imageStimInfo = "./data/GOL1FlashOdor.mat" # AOL1FlashOdor GOL1FlashOdor GOL6FlashOdor
 
 # Which data to load?
+visualVsOdor = "visual"
 loadFullNII = False
-loadSavedData = True
-saveData = False
+loadSavedData = False
+saveData = True
 saveName = imageNIIPath[7:11]
 importDataInSegments = True # Use when NII file is too big
 
@@ -115,14 +116,19 @@ def getMeanEvokedActivity(stimulationTimes):
     return evokedAverage
 
 if loadSavedData==True:
-    visualEvokedAverage = np.load('full' + saveName + 'visualEvokedAverage.npy')
+    evokedAverage = np.load('full' + saveName + visualVsOdor + 'evokedAverage.npy')
 else:
-    visualEvokedAverage = getMeanEvokedActivity(stimulationTimes=flashTimes)
+    if visualVsOdor=="visual":
+        stimulusTimes = flashTimes
+    else:
+        stimulusTimes = odorTimes
+    evokedAverage = getMeanEvokedActivity(stimulationTimes=stimulusTimes)
     # odorEvokedAverage = getMeanEvokedActivity(stimulationTimes=odorTimes)
     if saveData==True:
-        np.save(saveName +  'visualEvokedAverage', visualEvokedAverage)
-        print('Visual evoked activity saved!')
-times = np.linspace(-baselineLength, evokedLength, num=visualEvokedAverage.shape[2])/frequency
+        print('Evoked activity being saved...')
+        np.save(saveName +  visualVsOdor + 'evokedAverage', evokedAverage)
+        print('Evoked activity saved!')
+times = np.linspace(-baselineLength, evokedLength, num=evokedAverage.shape[2])/frequency
 
 # --------------------------------------------
 # Visualise brain activity
@@ -145,7 +151,7 @@ def makeAnimation(data, sliceIndex=None, showTimes=False):
             return [im, text]
         else: return im
     fig = plt.figure()# figsize=(10,10))
-    im = plt.imshow(retrievalFunction(data, 0, sliceIndex))#, cmap="gray")
+    im = plt.imshow(retrievalFunction(data, 0, sliceIndex), cmap="gray")
     if showTimes == True: text = plt.text(5,5, s="%.2f" % times[0], color='white')
     frameNumber = np.max(data.shape)
     anim = animation.FuncAnimation(fig, animate_func, frames=frameNumber, interval = 1.0) #1000 / fps)
@@ -153,10 +159,10 @@ def makeAnimation(data, sliceIndex=None, showTimes=False):
     plt.show()
 
 # Dispay evoked average
-# makeAnimation(visualEvokedAverage, sliceIndex=5, showTimes=True)
-makeAnimation(np.max(visualEvokedAverage, axis=3), sliceIndex=None, showTimes=True) # Maximal projection
-# makeAnimation(np.mean(visualEvokedAverage, axis=3), sliceIndex=None, showTimes=True)
+# makeAnimation(evokedAverage, sliceIndex=5, showTimes=True)
+makeAnimation(np.max(evokedAverage, axis=3), sliceIndex=None, showTimes=True) # Maximal projection
+# makeAnimation(np.mean(evokedAverage, axis=3), sliceIndex=None, showTimes=True)
 if loadFullNII==True:
     makeAnimation(np.mean(cutImgData, axis=3), sliceIndex=None)
-# makeAnimation(visualEvokedAverage, sliceIndex=1)
+# makeAnimation(evokedAverage, sliceIndex=1)
 
