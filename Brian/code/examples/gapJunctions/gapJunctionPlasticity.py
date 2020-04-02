@@ -74,7 +74,7 @@ n_exc = 10 #800
 excPop = NeuronGroup(n_exc, model=LIFeqs, threshold="v>=v_threshold", reset="v=v_reset", method='euler')
 
 # Define inhibitory population
-n_inh = 4# 200
+n_inh = 30
 inhPop = NeuronGroup(n_inh, model=fastSpikingEqs, threshold="v>=v_threshold", reset="v=v_reset; u+=b", method='euler')
 trace = StateMonitor(inhPop, ['v', 'burst'], record=True)
 
@@ -83,10 +83,10 @@ trace = StateMonitor(inhPop, ['v', 'burst'], record=True)
 # -----------------------------------------------
 
 # # Define inhibitory gap junction synapses
-Wii = 0 * mA
+Wii = 0 * mA # -80 * mA
 tauI = 10 * ms
 thetaBurst = 1.3
-alphaLTD = 15.69 * nS * ms**-1
+alphaLTD = 100 * uS * ms**-1 # 15.69 * nS * ms**-1
 gammab = 10 * siemens
 S = Synapses(inhPop, inhPop, on_pre='Ispike_post+=Wii', on_post='burst_post+=1', model='''
              Igap_post = gamma * (v_pre - v_post) : amp (summed)
@@ -101,37 +101,45 @@ traceS = StateMonitor(S, ['gamma'], record=True)
 # -----------------------------------------------
 # Run simulation
 # -----------------------------------------------
+print('Running simulation...')
 
 # Run simulation
-inhPop.Iext = 0 * mA
-run(200*ms)
-inhPop.Iext = [(8+np.random.randn())*mA for i in range(n_inh)]
-run(400*ms)
-inhPop.Iext = 0 * mA
-run(200*ms)
+inhPop.Iext = [(8+np.random.randn()*4)*mA for i in range(n_inh)]
+run(5000*ms)
+# inhPop.Iext = 0 * mA
+# run(200*ms)
 
-# Plot results
+# # Plot results
+# figure()
+# for i in range(n_inh):
+#     subplot(n_inh,1,i+1)
+#     plot(trace.t/ms, trace.v[i])
+
+# figure()
+# for i in range(n_inh):
+#     subplot(n_inh,1,i+1)
+#     plot(trace.t/ms, trace.burst[i])
+
+
 figure()
-for i in range(n_inh):
-    subplot(n_inh,1,i+1)
-    plot(trace.t/ms, trace.v[i])
+meanSignal = np.mean(trace.v, axis=0)
+plot(meanSignal, linewidth=2); show()
 
-figure()
-for i in range(n_inh):
-    subplot(n_inh,1,i+1)
-    plot(trace.t/ms, trace.burst[i])
+# from scipy.signal import savgol_filter
+# figure()
+# # for i in range(n_inh): plot(trace.v[i], linewidth=.5);
+# meanSignal = np.mean(trace.v, axis=0)
+# # plot(savgol_filter(meanSignal, 1001, 1), linewidth=2); show()
 
-# for i in range(n_inh): plot(trace.v[i], linewidth=.5);
-# plot(np.mean(trace.v, axis=0), linewidth=2)
+# N = 1000
+# plot(np.convolve(meanSignal, np.ones((N,))/N, mode='valid'), linewidth=2); show()
+
+
+# figure()
+# for i in range(n_inh):
+#     subplot(n_inh,1,i+1);
+#     plot(trace.t/ms, traceS.gamma[i])
 # show()
-
-figure()
-for i in range(n_inh):
-    subplot(n_inh,1,i+1);
-    plot(trace.t/ms, traceS.gamma[i])
-show()
-
-
 
 
 
