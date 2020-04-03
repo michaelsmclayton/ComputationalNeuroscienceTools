@@ -15,8 +15,8 @@ Vcut = VT + 5 * DeltaT
 
 # Pick an electrophysiological behaviour
 #tauw, a, b, Vr = 144*ms, 4*nS, 0.0805*nA, -70.6*mV # Regular spiking (as in the paper)
-tauw,a,b,Vr=20*ms,4*nS,0.5*nA,VT+5*mV; EL = VT # Bursting
-#tauw,a,b,Vr=144*ms,2*C/(144*ms),0*nA,-70.6*mV # Fast spiking
+#tauw,a,b,Vr=20*ms,4*nS,0.5*nA,VT+5*mV; EL = VT # Bursting
+tauw,a,b,Vr=144*ms,2*C/(144*ms),0*nA,-70.6*mV # Fast spiking
 
 # Model equations
 eqs = '''
