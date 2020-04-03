@@ -13,8 +13,8 @@ import numpy as np
 tau_v = 17 * ms # membrane time constant
 v_ra = -75 * mV # membrane resting potential
 v_rb = -60 * mV # membrane threshold potential
-v_threshold = -60 * mV # v_rb
-v_reset = -47 * mV # v_ra # reset potential
+v_threshold = 0 * mV
+v_reset = -70 * mV
 Ku = 10 * ohm # coupling parameters to the adaptation variable 'u'
 R = 8 * ohm # resistance
 tauburst = 8 *  ms
@@ -34,25 +34,6 @@ fastSpikingEqs = '''
     Igap : amp
     Inoise : amp
     Iext : amp
-'''
-
-# -----------------------------------------------
-# Leaky integrated-and-fire model (excitatory)
-# -----------------------------------------------
-
-# Parameters
-tau_m = 40 * ms # membrane time constant
-tau_e = 12 * ms
-Rm = 0.6 * ohm # resistance
-v_threshold = 0 * mV
-v_reset = -70 * mV
-
-# Model equations
-LIFeqs = '''
-    dv/dt = ( -v + Rm * I) / tau_m : volt
-    I = Iinput + Ispike : amp
-    dIspike/dt = (-Ispike / tau_e) : amp
-    Iinput : amp
 '''
 
 # -----------------------------------------------
@@ -101,16 +82,11 @@ print('Running simulation...')
 inhPop.Iext = [(8+np.random.randn()*4)*mA for i in range(n_inh)]
 run(20000*ms, report='stdout')
 
+# Plot results
+fig = figure()
 def removeBox(ax):
     for line in ['top', 'right','bottom','left']:
         ax.spines[line].set_visible(False)
-    # ax.spines['top'].set_visible(False)
-    # ax.spines['right'].set_visible(False)
-    # ax.spines['bottom'].set_visible(False)
-    # ax.spines['left'].set_visible(False)
-
-# Plot results
-fig = figure()
 ax1 = subplot(2,1,1)
 meanSignal = np.mean(trace.v, axis=0)
 plot(meanSignal[1000:195000], color='k', linewidth=.05)
