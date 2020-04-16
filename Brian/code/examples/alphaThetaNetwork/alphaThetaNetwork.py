@@ -24,7 +24,7 @@ sawtooth = lambda A : '''%s*((((t/ms)-tS)/T)-floor(((t/ms)-tS)/T))''' % (A)
 # Define function parameters
 A = 100 # period of the sawtooth oscillations
 mu = 40; sig = 20 # moment and width of secondary, bursting activity
-interneuronExcitability = 0 # 20, 0
+interneuronExcitability = 20 # 20, 0
 
 # Define interneuron model
 numberOfNeurons = 100
@@ -60,7 +60,7 @@ trace_relay = StateMonitor(relayMode, ['v','I'], record=True)
 # -------------------------------
 S1 = Synapses(bursting, interneurons, on_pre='tS_post = t/ms') # reset sawtooth on spike
 S1.connect()
-S2 = Synapses(interneurons, relayMode, on_pre='I_post-=.5')
+S2 = Synapses(interneurons, relayMode, on_pre='I_post-=.20')
 S2.connect()
 
 # Run and plot results
