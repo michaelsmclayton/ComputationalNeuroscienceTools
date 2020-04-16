@@ -1,4 +1,17 @@
 from brian2 import *
+'''Temporal Framing of Thalamic Relay-Mode Firing by Phasic Inhibition during the Alpha Rhythm'''
+
+# General functions
+thetaNeuron = lambda : '''dTheta/dt = ( (1-cos(Theta)) + (I*(1 + cos(Theta)))) * ms**-1 : 1'''# + (%s*xi)*ms**-.5: 1''' % (sig)
+
+# -------------------------------
+# HT-bursting neurons
+# -------------------------------
+eqs = thetaNeuron() + '''
+    I : 1
+'''
+bursting = NeuronGroup(N=1, model=eqs, threshold="sin(Theta)>.99", method='euler')
+trace_bursting = StateMonitor(bursting, ['Theta'], record=True)
 
 # -------------------------------
 # Interneurons
@@ -7,42 +20,48 @@ from brian2 import *
 # Define functions
 gaussian = lambda amp,mu,sig : '''%s*exp(-((tC-%s)**2)/%s)''' % (amp,mu,sig)
 sawtooth = lambda A : '''%s*((((t/ms)-tS)/T)-floor(((t/ms)-tS)/T))''' % (A)
-thetaNeuron = lambda sig : '''dTheta/dt = ( (1-cos(Theta)) + (I*(1 + cos(Theta)))) * ms**-1 : 1'''# + (%s*xi)*ms**-.5: 1''' % (sig)
 
 # Define function parameters
 A = 100 # period of the sawtooth oscillations
-mu = 50; sig = 10 # moment and width of secondary, bursting activity
-gaussianHeight = 5
+mu = 40; sig = 20 # moment and width of secondary, bursting activity
+interneuronExcitability = 0 # 20, 0
 
 # Define interneuron model
 numberOfNeurons = 100
-eqs = thetaNeuron(sig=.1) + '''
+eqs = thetaNeuron() + '''
     I = (I_exp+I_gaus)-.1 : 1
     I_exp = exp(-tC/2) : 1 # Exponential (i.e. initial spike)
-    I_gaus = '''+gaussian(gaussianHeight,mu,sig)+''' : 1 # Gaussian (i.e. both spike burst)
+    I_gaus = '''+gaussian(interneuronExcitability,mu,sig)+''' : 1 # Gaussian (i.e. both spike burst)
     tC = '''+sawtooth(A)+''': 1 # cycle time
     tS : 1 # input spike time
     T : 1
 '''
 interneurons = NeuronGroup(N=numberOfNeurons, model=eqs, threshold="sin(Theta)>.99", method='euler')
 interneurons.T = 100+(np.random.randn(numberOfNeurons)*5)
-interneurons.tS = -np.abs(np.random.randn(numberOfNeurons))*50
+interneurons.tS = -np.abs(np.random.randn(numberOfNeurons))*100
 trace_interNeuron = StateMonitor(interneurons, ['Theta','I', 'tC', 'tS'], record=True)
 
 # -------------------------------
-# Bursting neurons
+# Relay mode neurons
 # -------------------------------
-eqs = thetaNeuron(sig=0) + '''
-    I : 1
+a, b, c, d = .02, .25, -65, .05 # thalamocortical neuron
+tauI = 10*ms
+eqs = '''
+    tau = .5 * ms : second
+    dv/dt = ( .04*v**2 + 5*v + 140 - u + I ) / tau : 1
+    du/dt = ( a * (b*v - u) ) / tau : 1
+    dI/dt = -I / tauI: 1
 '''
-bursting = NeuronGroup(N=1, model=eqs, threshold="sin(Theta)>.99", method='euler')
-trace_bursting = StateMonitor(bursting, ['Theta'], record=True)
+relayMode = NeuronGroup(N=1, model=eqs, threshold="v>=30", reset="v=c; u+=d", method='euler')
+trace_relay = StateMonitor(relayMode, ['v','I'], record=True)
 
 # -------------------------------
 # Synapses
 # -------------------------------
-S = Synapses(bursting, interneurons, on_pre='tS_post = t/ms') # reset sawtooth on spike
-S.connect()
+S1 = Synapses(bursting, interneurons, on_pre='tS_post = t/ms') # reset sawtooth on spike
+S1.connect()
+S2 = Synapses(interneurons, relayMode, on_pre='I_post-=.5')
+S2.connect()
 
 # Run and plot results
 bursting.I = -.1
@@ -50,11 +69,12 @@ run(1000*ms)
 bursting.I = .001
 run(1000*ms)
 bursting.I = -.1
-run(2000*ms)
-fig, ax = plt.subplots(2,1,sharex=True)
+run(1000*ms)
+fig, ax = plt.subplots(3,1,sharex=True)
 #ax[0].plot(trace_interNeuron.t/ms, np.sin(trace_interNeuron.Theta[0]))
 ax[0].plot(trace_interNeuron.t/ms, np.mean(np.sin(trace_interNeuron.Theta),axis=0))
 ax[1].plot(trace_bursting.t/ms, np.sin(trace_bursting.Theta[0]))
+ax[2].plot(trace_relay.t/ms, trace_relay.v[0])
 show()
 
 
