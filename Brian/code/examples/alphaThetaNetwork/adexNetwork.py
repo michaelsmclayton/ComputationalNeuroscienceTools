@@ -16,15 +16,16 @@ adex = '''
 '''
 
 # Bursting parameters
+excitability = .4 # [.1,.4,1] = inhibited, sparse spiking, rhythmic spiking
 A = 100 # period of the sawtooth oscillations
 mu = .5*A; sig = mu/2 # moment and width of secondary, bursting activity
-excitability = 0; burstTime = 40; burstWidth = 100
+burstTime = 40; burstWidth = 100
 gaussianInput = lambda amp,mu,sig : '''%s*exp(-((tC-%s)**2)/%s)*nA''' % (amp,mu,sig)
 sawtooth = lambda A : '''%s*((((t/ms))/T)-floor(((t/ms))/T))''' % (A)
 periodic = '''
     I = I_syn*(I_exp + I_gaus) : amp
     I_exp = '''+ gaussianInput(10,5,1)+''' : amp # (initial spike)
-    I_gaus = '''+gaussianInput(excitability,burstTime,burstWidth)+''' : amp # (post-spike burst)
+    I_gaus = '''+gaussianInput(excitability*5,burstTime,burstWidth)+''' : amp # (post-spike burst)
     I_syn : 1
     tC = '''+sawtooth(A)+''': 1 # cycle time
     dT/dt = (100-T)/second + (.01*xi_3*ms**-.5) : 1
@@ -36,19 +37,22 @@ neurons = NeuronGroup(N=numberOfNeurons, model=adex+periodic, threshold='u>20*mV
 neurons.u = EL
 neurons.w = .7*nA
 neurons.T = 100
-neurons.I_syn = 1 # .5
+neurons.I_syn = excitability
 
 # Define recordings
 trace = StateMonitor(neurons, ['u','w','I','tC','T'], record=True)
 spikes = SpikeMonitor(neurons)
 
 # Run simulation
-run(2000*ms,report='stdout')
+run(4000*ms,report='stdout')
 
 # Plot results
+spikeTrain = spikes.spike_trains()[0]/ms
 fig,ax = plt.subplots(1,1)
 ax.plot(trace.t/ms, np.mean(trace.u,axis=0), color='k', linewidth=.5)
+ax.scatter(spikeTrain,np.zeros(shape=spikeTrain.shape))
 ax.set_ylim([-.1,.02])
+plt.plot(trace.t/ms, trace.I[0], color='k', linewidth=.5)
 plt.show()
 
 # Get spike time interavls
