@@ -7,14 +7,14 @@ externalInput = 0.0*nA
 ''' < -0.5 = no spiking (i.e. membrane voltage fluctuations only)
     ~ 0.0*nA = sporadic, single spiking
     ~ 0.2*nA = regular, single spiking
-    > 0.5*nA : periodic bursting'''
+    > 1.0*nA : periodic bursting'''
 
 # Adaptive exponential integrate-and-fire model
 C = 281*pF # membrane capacitance
 gL = 30*nS # leak conductance
 EL = -70.6*mV # leak reversal potential
 VT = -50.4*mV # spike threshold
-deltaT = 2*mV # slope factor
+deltaT = 4*mV # slope factor
 Vcut = VT + 5*deltaT
 tau_w = 144*ms # adaptation time constant
 a = 4*nS # subthreshold adaptation
@@ -26,12 +26,12 @@ adex = '''
 '''
 
 # Bursting parameters
-A = 125 # period of the sawtooth oscillations
+A = 100 # period of the sawtooth oscillations
 burstTime = .5*A; burstWidth = burstTime/2 # moment and width of secondary, bursting activity
 gaussianInput = lambda amp,mu,sig : '''%s*exp(-((tC-%s)**2)/%s)*nA''' % (amp,mu,sig)
 sawtooth = lambda A : '''%s*((((t/ms))/T)-floor(((t/ms))/T))''' % (A)
 periodic = '''
-    I = I_ext + gamma*(I_exp + I_gaus) : amp
+    I = (I_ext + gamma*I_exp + gamma**4*I_gaus) : amp
     I_exp = '''+gaussianInput(10,5,1)+''' : amp # (initial spike)
     I_gaus = '''+gaussianInput(4,burstTime,burstWidth)+''' : amp # (post-spike burst)
     tC = '''+sawtooth(A)+''': 1 # cycle time
@@ -39,6 +39,7 @@ periodic = '''
     gamma = 1 / (1+exp(-3*(I_ext/nA))): 1 # neuron excitability
     I_ext : amp
 '''
+# Note here: I_gaus is multiplied by gamma^4, such that it smaller than I_exp other than when gamma ~= §
 
 # Create neurons
 numberOfNeurons = 1
@@ -61,7 +62,7 @@ fig,ax = plt.subplots(1,1)
 ax.plot(trace.t/ms, np.mean(trace.u,axis=0), color='k', linewidth=.5)
 ax.scatter(spikeTrain,np.zeros(shape=spikeTrain.shape))
 ax.set_ylim([-.1,.02])
-plt.plot(trace.t/ms, trace.I[0], color='k', linewidth=.5)
+# plt.plot(trace.t/ms, trace.I[0], color='k', linewidth=.5)
 plt.show()
 
 # Get spike time interavls
@@ -75,4 +76,6 @@ def getSpikeIntervals(spikes):
 # plt.plot(trace.T[0]); plt.show()
 print(spikes.spike_trains()[0]/ms)
 
+# See whether spikes are more likely to be inline with oscillation peaks
+# plt.hist(spikeTrain % A); plt.show()
 
