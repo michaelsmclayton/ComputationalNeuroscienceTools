@@ -3,12 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Simulation parameters
-simulationLength = 1000*ms
-externalInput = 1.0*nA
-''' < -0.5 = no spiking (i.e. membrane voltage fluctuations only)
-    ~ 0.0*nA = sporadic, single spiking
-    ~ 0.2*nA = regular, single spiking
-    > 1.0*nA : periodic bursting'''
+simulationLength = 4000*ms
+externalInput = 0.0*nA
 
 # Common functions
 getOscPeriod = lambda freq : 1/(freq)/ms
@@ -23,20 +19,19 @@ def sawtoothCycles(A):
 C = 281*pF # membrane capacitance
 gL = 30*nS # leak conductance
 EL = -70.6*mV # leak reversal potential
-VT = -50.4*mV # spike threshold
 deltaT = 4*mV # slope factor
-Vcut = VT + 5*deltaT
 def adexNeuron():
     return '''
     du/dt = ( -gL*(u-EL) + gL*deltaT*exp((u - VT)/deltaT) - w + I ) / C + ( xi_1*mV*ms**-.5 ) : volt
     dw/dt = ( a*(u-EL) - w ) / tau_w + ( 10*xi_2*pA*ms**-.5 ): amp
-    tau_w : second \n a : siemens \n b : amp \n Vr : volt'''
-def initialiseAdexNeurons(neurons, tau_w, a, b, Vr,T):
+    tau_w : second \n a : siemens \n b : amp \n Vr : volt \n VT : volt'''
+def initialiseAdexNeurons(neurons, tau_w, a, b, Vr, VT, T):
     neurons.u = EL; neurons.w = .7*nA
     neurons.tau_w = tau_w # adaptation time constant
     neurons.a = a # subthreshold adaptation
     neurons.b = b # spike-triggered adaptation
-    neurons.Vr = Vr # post-spike reset potential
+    neurons.Vr = VT + Vr # post-spike reset potential
+    neurons.VT = VT # spike threshold
     neurons.T = T # cycle period (ms)
     return neurons
 
@@ -44,21 +39,26 @@ def initialiseAdexNeurons(neurons, tau_w, a, b, Vr,T):
 # ---------------------------------------------------------
 # High-threshold bursting cells
 # ---------------------------------------------------------
-
+''' With no external input (i.e. spontaneously), these neurons will fire at a base rate of ~8Hz.
+During this mode of spontaneous firing, spikes will prodominantly be single spikes. When external
+input is greater (e.g. 1*nA), firing rate increase to >10Hz, and spikes come is periodic bursts.
+(see Fig 4 of "Cellular Dynamics of Cholinergically Induced (8 – 13 Hz) Rhythms in Sensory Thalamic
+Nuclei In Vitro)'''
 htBurstBasePeriod = getOscPeriod(8*Hz)
 htburst = adexNeuron() + '''
-    I = I_ext + I_spont : amp
-    I_spont = '''+gaussianInput(1.5,.1*htBurstBasePeriod,htBurstBasePeriod/2)+''' : amp # spontaneous firing
+    I = I_ext + gamma*I_spont : amp
+    I_spont = '''+gaussianInput(6,5,25)+''' : amp # spontaneous firing
     I_ext : amp
     baseT = 1 / (baseFreq + maxFreqChange*(2*(1/(1+exp(-3*I_ext/nA)))-1)) / ms : 1
+    gamma = 1 / (1+exp(-3*(I_ext/nA))): 1 # neuron excitability
     baseFreq : hertz
     maxFreqChange : hertz
 '''+sawtoothCycles(A=htBurstBasePeriod)
 htBurstingCells = NeuronGroup(N=1, model=htburst, threshold='u>20*mV', reset="u=Vr; w+=b", method='euler')
-htBurstingCells = initialiseAdexNeurons(htBurstingCells, tau_w=144*ms, a=4*nS, b=0.0805*nA, Vr=VT+5*mV, T=htBurstBasePeriod)
+htBurstingCells = initialiseAdexNeurons(htBurstingCells, tau_w=144*ms, a=4*nS, b=0.0805*nA, Vr=-5*mV, VT=-40.4*mV, T=htBurstBasePeriod)
 htBurstingCells.I_ext = externalInput
 htBurstingCells.baseFreq = 8*Hz
-htBurstingCells.maxFreqChange = 8*Hz
+htBurstingCells.maxFreqChange = 6*Hz
 
 # Define recordings
 htBursting_trace = StateMonitor(htBurstingCells, ['u','w','I'], record=True)
@@ -68,7 +68,11 @@ htBursting_spikes = SpikeMonitor(htBurstingCells)
 # ---------------------------------------------------------
 # Interneuron cells
 # ---------------------------------------------------------
-
+'''With no external input (i.e. spontaneously), these neurons will fire single spikes sporadically,
+but always in-line with ongoing alpha oscillations. When the cell is inhibited, it will display
+only membrane voltage fluctuations, and no spiking. However, if the cell is activated (e.g. ~1*nA),
+the cell will fire in the following pattern: a single spike around the start of a 100*ms cycle,
+followed by a burst of spikes ~50 into the cycle'''
 interneuronBasePeriod = getOscPeriod(10*Hz)
 burstTime = .5*interneuronBasePeriod; burstWidth = burstTime/2 # moment and width of secondary, bursting activity
 interneuron = adexNeuron() + '''
@@ -81,7 +85,7 @@ interneuron = adexNeuron() + '''
     I_ext : amp
 '''
 interneuronCells = NeuronGroup(N=1, model=interneuron, threshold='u>20*mV', reset="u=Vr; w+=b", method='euler')
-interneuronCells = initialiseAdexNeurons(interneuronCells, tau_w=144*ms, a=4*nS, b=0.0805*nA, Vr=EL+5*mV, T=interneuronBasePeriod)
+interneuronCells = initialiseAdexNeurons(interneuronCells, tau_w=144*ms, a=4*nS, b=0.0805*nA, Vr=-20*mV, VT=-50.4*mV, T=interneuronBasePeriod)
 interneuronCells.I_ext = externalInput
 
 # Define recordings
@@ -96,19 +100,13 @@ interneuron_spikes = SpikeMonitor(interneuronCells)
 # Run simulation
 run(simulationLength,report='stdout')
 
-# Plot bursting results results
-plt.figure()
-plt.plot(htBursting_trace.u[0])
-# plt.show()
-
-# Plot interneuron results
-spikeTrain = interneuron_spikes.spike_trains()[0]/ms
-fig,ax = plt.subplots(1,1)
-ax.plot(interneuron_trace.t/ms, np.mean(interneuron_trace.u,axis=0), color='k', linewidth=.5)
-ax.scatter(spikeTrain,np.zeros(shape=spikeTrain.shape))
-ax.set_ylim([-.14,.02])
-# plt.plot(interneuron_trace.t/ms, interneuron_trace.I[0], color='k', linewidth=.5)
-
+# Plot results
+fig,ax = plt.subplots(2,1,sharex=True)
+interneuron_spikeTrain = interneuron_spikes.spike_trains()[0]/ms
+ax[0].plot(interneuron_trace.t/ms, np.mean(interneuron_trace.u,axis=0), color='k', linewidth=.5)
+ax[0].scatter(interneuron_spikeTrain,np.zeros(shape=interneuron_spikeTrain.shape))
+ax[0].set_ylim([-.09,.02])
+ax[1].plot(htBursting_trace.t/ms, htBursting_trace.u[0], color='k', linewidth=.5)
 plt.show()
 
 # Get spike time interavls
@@ -120,7 +118,6 @@ def getSpikeIntervals(spikes):
     return spikeIntervals
 # plt.hist(getSpikeIntervals(spikes)); plt.show()
 # plt.plot(interneuron_trace.T[0]); plt.show()
-print(interneuron_spikes.spike_trains()[0]/ms)
 
 # See whether spikes are more likely to be inline with oscillation peaks
 # plt.hist(spikeTrain % A); plt.show()
