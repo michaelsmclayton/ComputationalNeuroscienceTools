@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Simulation parameters
-simulationLength = 1000*ms
+simulationLength = 5000*ms
 externalInput = 1.0*nA
 
 # Common functions
@@ -41,24 +41,23 @@ def initialiseAdexNeurons(neurons, tau_w, a, b, Vr, VT, T):
 # ---------------------------------------------------------
 ''' With no external input (i.e. spontaneously), these neurons will fire at a base rate of ~8Hz.
 During this mode of spontaneous firing, spikes will prodominantly be single spikes. When external
-input is greater (e.g. 1*nA), firing rate increase to >10Hz, and spikes come is periodic bursts.
+input is greater (e.g. 1*nA), firing rate increase to >8Hz, and spikes come is periodic bursts.
 (see Fig 4 of "Cellular Dynamics of Cholinergically Induced (8 – 13 Hz) Rhythms in Sensory Thalamic
 Nuclei In Vitro)'''
-htBurstBasePeriod = getOscPeriod(8*Hz)
+htBurstBasePeriod = getOscPeriod(8*Hz) # Note that the base frequency is 8Hz. The actual firing frequency increases when driven by excited, faster firing HT neurons
 htburst = adexNeuron() + '''
     I = I_ext + gamma*I_spont : amp
-    I_spont = '''+gaussianInput(6,5,25)+''' : amp # spontaneous firing
-    I_ext : amp
+    I_spont = '''+gaussianInput(6,htBurstBasePeriod-5,25)+''' : amp # spontaneous firing
     baseT = 1 / (baseFreq + maxFreqChange*(2*(1/(1+exp(-3*I_ext/nA)))-1)) / ms : 1
-    gamma = 1 / (1+exp(-3*(I_ext/nA))): 1 # neuron excitability
+    gamma = (1 / (1+exp(-3*(I_ext/nA)))): 1 # neuron excitability
+    I_ext : amp
     baseFreq : hertz
     maxFreqChange : hertz
 '''+sawtoothCycles(A=htBurstBasePeriod,tS='0')
 htBurstingCells = NeuronGroup(N=1, model=htburst, threshold='u>20*mV', reset="u=Vr; w+=b", method='euler')
 htBurstingCells = initialiseAdexNeurons(htBurstingCells, tau_w=144*ms, a=4*nS, b=0.0805*nA, Vr=-5*mV, VT=-40.4*mV, T=htBurstBasePeriod)
-htBurstingCells.I_ext = externalInput
 htBurstingCells.baseFreq = 8*Hz
-htBurstingCells.maxFreqChange = 6*Hz
+htBurstingCells.maxFreqChange = 0*Hz
 
 # Define recordings
 htBursting_trace = StateMonitor(htBurstingCells, ['u','w','I'], record=True)
@@ -72,28 +71,26 @@ htBursting_spikes = SpikeMonitor(htBurstingCells)
 but always in-line with ongoing alpha oscillations. When the cell is inhibited, it will display
 only membrane voltage fluctuations, and no spiking. However, if the cell is activated (e.g. ~1*nA),
 the cell will fire in the following pattern: a single spike around the start of a 100*ms cycle,
-followed by a burst of spikes ~50 into the cycle'''
+followed by a burst of spikes ~50% into the cycle'''
 interneuronBasePeriod = getOscPeriod(8*Hz)
 burstTime = .5*interneuronBasePeriod; burstWidth = burstTime/2 # moment and width of secondary, bursting activity
 tau_syn = 10*ms
 interneuron = adexNeuron() + '''
-    I = (I_ext + gamma*I_exp + gamma**4*I_gaus) : amp # Note that I_gaus is multiplied by gamma^4, such that it smaller than I_exp other than when gamma ~= §
-    I_exp = '''+gaussianInput(10,5,1)+''' : amp # (initial spike)
-    I_gaus = '''+gaussianInput(4,burstTime,burstWidth)+''' : amp # (post-spike burst)
+    I = (gamma*I_exp + gamma**4*I_gaus) : amp # Note that I_gaus is multiplied by gamma^4, such that it smaller than I_exp other than when gamma ~= §
+    I_exp = '''+gaussianInput(10,10,1)+''' : amp # (initial spike)
+    I_gaus = '''+gaussianInput(8,burstTime,burstWidth)+''' : amp # (post-spike burst)
     dI_syn/dt = -I_syn/tau_syn: amp
     '''+sawtoothCycles(A=interneuronBasePeriod,tS='tS/ms')+'''
     tS : second
-    gamma = 1 / (1+exp(-3*(I_ext/nA))): 1 # neuron excitability
+    dgamma/dt = (.5-gamma) / (500*ms): 1 # neuron excitability
     baseT = '''+str(interneuronBasePeriod)+''' : 1
-    I_ext : amp
 '''
 interneuronCells = NeuronGroup(N=1, model=interneuron, threshold='u>20*mV', reset="u=Vr; w+=b", events={'phase_reset': 'I_syn>2*pA'}, method='euler')
 interneuronCells = initialiseAdexNeurons(interneuronCells, tau_w=144*ms, a=4*nS, b=0.0805*nA, Vr=-35*mV, VT=-50.4*mV, T=interneuronBasePeriod)
-interneuronCells.I_ext = externalInput
-interneuronCells.run_on_event('phase_reset', "tS=t; I_syn=0*pA")
+interneuronCells.run_on_event('phase_reset', "tS=t; I_syn=0*pA; gamma+=.08")
 
 # Define recordings
-interneuron_trace = StateMonitor(interneuronCells, ['u','w','I','I_syn','tC','T','tS'], record=True)
+interneuron_trace = StateMonitor(interneuronCells, ['u','w','I','I_syn','tC','T','tS','gamma'], record=True)
 interneuron_spikes = SpikeMonitor(interneuronCells)
 
 
@@ -109,7 +106,14 @@ S1.connect()
 # ---------------------------------------------------------
 
 # Run simulation
-run(simulationLength,report='stdout')
+htBurstingCells.I_ext = externalInput
+run(simulationLength/3,report='stdout')
+htBurstingCells.I_ext = 0*mA
+run(simulationLength/3,report='stdout')
+htBurstingCells.I_ext = externalInput
+run(simulationLength/3,report='stdout')
+htBurstingCells.I_ext = 0*mA
+run(simulationLength/3,report='stdout')
 
 # Plot results
 fig,ax = plt.subplots(3,1,sharex=True)
@@ -118,7 +122,7 @@ ax[0].plot(interneuron_trace.t/ms, np.mean(interneuron_trace.u,axis=0), color='k
 ax[0].scatter(interneuron_spikeTrain,np.zeros(shape=interneuron_spikeTrain.shape))
 ax[0].set_ylim([-.09,.02])
 ax[1].plot(htBursting_trace.t/ms, htBursting_trace.u[0], color='k', linewidth=.5)
-ax[2].plot(interneuron_trace.t/ms, np.mean(interneuron_trace.tS,axis=0), color='k', linewidth=.5)
+ax[2].plot(interneuron_trace.t/ms, np.mean(interneuron_trace.gamma,axis=0), color='k', linewidth=.5)
 plt.show()
 
 # Get spike time interavls
