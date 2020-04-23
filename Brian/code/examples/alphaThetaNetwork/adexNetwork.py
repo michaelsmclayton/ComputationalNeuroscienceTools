@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Simulation parameters
-simulationLength = 5000*ms
+simulationLength = 10000*ms
 externalInput = 1.0*nA
 
 # Common functions
@@ -74,9 +74,9 @@ the cell will fire in the following pattern: a single spike around the start of 
 followed by a burst of spikes ~50% into the cycle'''
 interneuronBasePeriod = getOscPeriod(8*Hz)
 burstTime = .5*interneuronBasePeriod; burstWidth = burstTime/2 # moment and width of secondary, bursting activity
-tau_syn = 10*ms
+tau_syn = 5*ms
 interneuron = adexNeuron() + '''
-    I = (gamma*I_exp + gamma**4*I_gaus) : amp # Note that I_gaus is multiplied by gamma^4, such that it smaller than I_exp other than when gamma ~= §
+    I = I_ext + (gamma*I_exp + gamma**4*I_gaus) : amp # Note that I_gaus is multiplied by gamma^4, such that it smaller than I_exp other than when gamma ~= §
     I_exp = '''+gaussianInput(10,10,1)+''' : amp # (initial spike)
     I_gaus = '''+gaussianInput(8,burstTime,burstWidth)+''' : amp # (post-spike burst)
     dI_syn/dt = -I_syn/tau_syn: amp
@@ -84,6 +84,7 @@ interneuron = adexNeuron() + '''
     tS : second
     dgamma/dt = (.5-gamma) / (500*ms): 1 # neuron excitability
     baseT = '''+str(interneuronBasePeriod)+''' : 1
+    I_ext : amp
 '''
 interneuronCells = NeuronGroup(N=1, model=interneuron, threshold='u>20*mV', reset="u=Vr; w+=b", events={'phase_reset': 'I_syn>2*pA'}, method='euler')
 interneuronCells = initialiseAdexNeurons(interneuronCells, tau_w=144*ms, a=4*nS, b=0.0805*nA, Vr=-35*mV, VT=-50.4*mV, T=interneuronBasePeriod)
@@ -94,12 +95,31 @@ interneuron_trace = StateMonitor(interneuronCells, ['u','w','I','I_syn','tC','T'
 interneuron_spikes = SpikeMonitor(interneuronCells)
 
 
+# -------------------------------
+# Relay mode neurons (thalamocortical neuron)
+# -------------------------------
+relayMode = '''
+    tau = .5 * ms : second
+    dv/dt = ( .04*v**2 + 5*v + 140 - u + I +.1 ) / tau : 1
+    du/dt = ( a * (b*v - u) ) / tau : 1
+    dI/dt = -I / tauI: 1
+    tauI : second
+    a = .02 : 1
+    b = .25 : 1
+    c = -65. : 1
+    d = .05 : 1
+'''
+relayCells = NeuronGroup(N=1, model=relayMode, threshold="v>=30", reset="v=c; u+=d", method='euler')
+relayCells.tauI = 15*ms # 10 *ms
+trace_relayCells = StateMonitor(relayCells, ['v','I'], record=True)
+
 # ---------------------------------------------------------
 # Synapses
 # ---------------------------------------------------------
 S1 = Synapses(htBurstingCells, interneuronCells, on_pre='I_syn_post += 1*pA') # reset sawtooth on spike
 S1.connect()
-
+S2 = Synapses(interneuronCells, relayCells, on_pre='I_post-=45') # reset sawtooth on spike
+S2.connect()
 
 # ---------------------------------------------------------
 # Run network and plot results
@@ -118,11 +138,11 @@ run(simulationLength/3,report='stdout')
 # Plot results
 fig,ax = plt.subplots(3,1,sharex=True)
 interneuron_spikeTrain = interneuron_spikes.spike_trains()[0]/ms
-ax[0].plot(interneuron_trace.t/ms, np.mean(interneuron_trace.u,axis=0), color='k', linewidth=.5)
-ax[0].scatter(interneuron_spikeTrain,np.zeros(shape=interneuron_spikeTrain.shape))
-ax[0].set_ylim([-.09,.02])
-ax[1].plot(htBursting_trace.t/ms, htBursting_trace.u[0], color='k', linewidth=.5)
-ax[2].plot(interneuron_trace.t/ms, np.mean(interneuron_trace.gamma,axis=0), color='k', linewidth=.5)
+ax[0].plot(htBursting_trace.t/ms, htBursting_trace.u[0], color='k', linewidth=.5)
+ax[1].plot(interneuron_trace.t/ms, np.mean(interneuron_trace.u,axis=0), color='k', linewidth=.5)
+# ax[1].scatter(interneuron_spikeTrain,np.zeros(shape=interneuron_spikeTrain.shape))
+ax[1].set_ylim([-.09,.02])
+ax[2].plot(trace_relayCells.t/ms, np.mean(trace_relayCells.v,axis=0), color='k', linewidth=.5)
 plt.show()
 
 # Get spike time interavls
