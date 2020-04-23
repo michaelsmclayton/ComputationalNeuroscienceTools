@@ -89,7 +89,7 @@ interneuron = adexNeuron() + '''
 interneuronCells = NeuronGroup(N=1, model=interneuron, threshold='u>20*mV', reset="u=Vr; w+=b", events={'phase_reset': 'I_syn>2*pA'}, method='euler')
 interneuronCells = initialiseAdexNeurons(interneuronCells, tau_w=144*ms, a=4*nS, b=0.0805*nA, Vr=-35*mV, VT=-50.4*mV, T=interneuronBasePeriod)
 interneuronCells.run_on_event('phase_reset', "tS=t; I_syn=0*pA; gamma+=.08")
-
+interneuronCells.gamma = .5
 # Define recordings
 interneuron_trace = StateMonitor(interneuronCells, ['u','w','I','I_syn','tC','T','tS','gamma'], record=True)
 interneuron_spikes = SpikeMonitor(interneuronCells)
@@ -100,7 +100,7 @@ interneuron_spikes = SpikeMonitor(interneuronCells)
 # -------------------------------
 relayMode = '''
     tau = .5 * ms : second
-    dv/dt = ( .04*v**2 + 5*v + 140 - u + I +.1 ) / tau : 1
+    dv/dt = ( .04*v**2 + 5*v + 140 - u + I + .5 ) / tau : 1
     du/dt = ( a * (b*v - u) ) / tau : 1
     dI/dt = -I / tauI: 1
     tauI : second
@@ -128,12 +128,12 @@ S2.connect()
 # Run simulation
 htBurstingCells.I_ext = externalInput
 run(simulationLength/3,report='stdout')
-htBurstingCells.I_ext = 0*mA
-run(simulationLength/3,report='stdout')
+htBurstingCells.I_ext = .2*nA
+run(simulationLength/2,report='stdout')
 htBurstingCells.I_ext = externalInput
 run(simulationLength/3,report='stdout')
-htBurstingCells.I_ext = 0*mA
-run(simulationLength/3,report='stdout')
+htBurstingCells.I_ext = .2*nA
+run(simulationLength/2,report='stdout')
 
 # Plot results
 fig,ax = plt.subplots(3,1,sharex=True)
