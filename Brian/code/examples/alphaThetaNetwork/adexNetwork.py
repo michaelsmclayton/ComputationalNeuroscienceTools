@@ -98,17 +98,13 @@ interneuron_spikes = SpikeMonitor(interneuronCells)
 # -------------------------------
 # Relay mode neurons (thalamocortical neuron)
 # -------------------------------
-tau = .5*ms
-relayMode = '''
-    du/dt = ( .04*u**2 + 5*u + 140 - w + I + .25 ) / tau : 1
-    dw/dt = ( a * (b*u - w) ) / tau : 1
-    dI/dt = -I / tauI: 1
-    tauI : second
-    a = .02 : 1 \n b = .25 : 1 \n c = -65. : 1 \n d = .05 : 1
-'''
-relayCells = NeuronGroup(N=1, model=relayMode, threshold="u>=30", reset="u=c; w+=d", method='euler')
-relayCells.tauI = 15*ms # 10 *ms
-trace_relayCells = StateMonitor(relayCells, ['u','w','I'], record=True)
+tauI = 15*ms 
+relayMode = '''du/dt = ((0.04/mV)*u**2 + 5*u + 140.25*mV - w + (I_syn/gRelay)) / ms : volt
+         dw/dt = a*(b*u-w) / ms : volt
+         dI_syn/dt = -I_syn / tauI: amp
+         a = 0.02 : 1 \n b = 0.25 : 1 \n c=-65*mV : volt \n d=.05*mV : volt \n gRelay = 40*nS : siemens'''
+relayCells = NeuronGroup(N=1, model=relayMode, threshold="u>=30*mV", reset="u=c; w+=d", method='euler')
+trace_relayCells = StateMonitor(relayCells, ['u','w','I_syn'], record=True)
 
 
 # ---------------------------------------------------------
@@ -116,7 +112,7 @@ trace_relayCells = StateMonitor(relayCells, ['u','w','I'], record=True)
 # ---------------------------------------------------------
 S1 = Synapses(htBurstingCells, interneuronCells, on_pre='I_syn_post += 1*pA')
 S1.connect()
-S2 = Synapses(interneuronCells, relayCells, on_pre='I_post-=45')
+S2 = Synapses(interneuronCells, relayCells, on_pre='I_syn_post-=1*nA')
 S2.connect()
 
 # ---------------------------------------------------------
