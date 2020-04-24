@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Simulation parameters
-simulationLength = 10000*ms
+simulationLength = 5000*ms
 externalInput = 1.0*nA
 
 # Common functions
@@ -25,14 +25,15 @@ def adexNeuron():
     du/dt = ( -gL*(u-EL) + gL*deltaT*exp((u - VT)/deltaT) - w + I ) / C + ( xi_1*mV*ms**-.5 ) : volt
     dw/dt = ( a*(u-EL) - w ) / tau_w + ( 10*xi_2*pA*ms**-.5 ): amp
     tau_w : second \n a : siemens \n b : amp \n Vr : volt \n VT : volt'''
-def initialiseAdexNeurons(neurons, tau_w, a, b, Vr, VT, T):
+def initialiseAdexNeurons(neurons, tau_w, a, b, Vr, VT, T=None):
     neurons.u = EL; neurons.w = .7*nA
     neurons.tau_w = tau_w # adaptation time constant
     neurons.a = a # subthreshold adaptation
     neurons.b = b # spike-triggered adaptation
     neurons.Vr = VT + Vr # post-spike reset potential
     neurons.VT = VT # spike threshold
-    neurons.T = T # cycle period (ms)
+    if T!=None:
+        neurons.T = T # cycle period (ms)
     return neurons
 
 
@@ -94,31 +95,28 @@ interneuronCells.gamma = .5
 interneuron_trace = StateMonitor(interneuronCells, ['u','w','I','I_syn','tC','T','tS','gamma'], record=True)
 interneuron_spikes = SpikeMonitor(interneuronCells)
 
-
 # -------------------------------
 # Relay mode neurons (thalamocortical neuron)
 # -------------------------------
+tau = .5*ms
 relayMode = '''
-    tau = .5 * ms : second
-    dv/dt = ( .04*v**2 + 5*v + 140 - u + I + .5 ) / tau : 1
-    du/dt = ( a * (b*v - u) ) / tau : 1
+    du/dt = ( .04*u**2 + 5*u + 140 - w + I + .25 ) / tau : 1
+    dw/dt = ( a * (b*u - w) ) / tau : 1
     dI/dt = -I / tauI: 1
     tauI : second
-    a = .02 : 1
-    b = .25 : 1
-    c = -65. : 1
-    d = .05 : 1
+    a = .02 : 1 \n b = .25 : 1 \n c = -65. : 1 \n d = .05 : 1
 '''
-relayCells = NeuronGroup(N=1, model=relayMode, threshold="v>=30", reset="v=c; u+=d", method='euler')
+relayCells = NeuronGroup(N=1, model=relayMode, threshold="u>=30", reset="u=c; w+=d", method='euler')
 relayCells.tauI = 15*ms # 10 *ms
-trace_relayCells = StateMonitor(relayCells, ['v','I'], record=True)
+trace_relayCells = StateMonitor(relayCells, ['u','w','I'], record=True)
+
 
 # ---------------------------------------------------------
 # Synapses
 # ---------------------------------------------------------
-S1 = Synapses(htBurstingCells, interneuronCells, on_pre='I_syn_post += 1*pA') # reset sawtooth on spike
+S1 = Synapses(htBurstingCells, interneuronCells, on_pre='I_syn_post += 1*pA')
 S1.connect()
-S2 = Synapses(interneuronCells, relayCells, on_pre='I_post-=45') # reset sawtooth on spike
+S2 = Synapses(interneuronCells, relayCells, on_pre='I_post-=45')
 S2.connect()
 
 # ---------------------------------------------------------
@@ -142,7 +140,7 @@ ax[0].plot(htBursting_trace.t/ms, htBursting_trace.u[0], color='k', linewidth=.5
 ax[1].plot(interneuron_trace.t/ms, np.mean(interneuron_trace.u,axis=0), color='k', linewidth=.5)
 # ax[1].scatter(interneuron_spikeTrain,np.zeros(shape=interneuron_spikeTrain.shape))
 ax[1].set_ylim([-.09,.02])
-ax[2].plot(trace_relayCells.t/ms, np.mean(trace_relayCells.v,axis=0), color='k', linewidth=.5)
+ax[2].plot(trace_relayCells.t/ms, np.mean(trace_relayCells.u,axis=0), color='k', linewidth=.5)
 plt.show()
 
 # Get spike time interavls
@@ -157,3 +155,20 @@ def getSpikeIntervals(spikes):
 
 # See whether spikes are more likely to be inline with oscillation peaks
 # plt.hist(spikeTrain % A); plt.show()
+
+
+
+# # -------------------------------
+# # Relay mode neurons (thalamocortical neuron) (Adex)
+# # -------------------------------
+# tau_I = 20*ms
+# relayMode = adexNeuron() + '''
+#     I = I_ext + I_syn : amp
+#     dI_syn/dt = -I_syn / tau_I: amp
+#     I_ext : amp
+# '''
+# relayCells = NeuronGroup(N=1, model=relayMode, threshold='u>20*mV', reset="u=Vr; w+=b", method='euler')
+# relayCells = initialiseAdexNeurons(relayCells, tau_w=144*ms, a=50*nS, b=0.0805*nA, Vr=-5*mV, VT=-65*mV)
+# relayCells.I_ext = 0.2*nA
+# trace_relayCells = StateMonitor(relayCells, ['u','I'], record=True)
+# S2 = Synapses(interneuronCells, relayCells, on_pre='I_syn_post-=.5*nA') # reset sawtooth on spike
