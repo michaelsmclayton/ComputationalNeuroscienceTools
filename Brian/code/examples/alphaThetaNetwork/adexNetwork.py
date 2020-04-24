@@ -106,6 +106,16 @@ relayMode = '''du/dt = ((0.04/mV)*u**2 + 5*u + 140.25*mV - w + (I_syn/gRelay)) /
 relayCells = NeuronGroup(N=1, model=relayMode, threshold="u>=30*mV", reset="u=c; w+=d", method='euler')
 trace_relayCells = StateMonitor(relayCells, ['u','w','I_syn'], record=True)
 
+# -------------------------------
+# Readout oscillator
+# -------------------------------
+tau = 50*ms
+readoutOscillatorEqs = '''
+    u = (scale + cos(pi+t/ms/20)) : 1
+    dscale/dt = (1-scale) / tau : 1'''
+readoutOscillator = NeuronGroup(N=1, model=readoutOscillatorEqs, method='euler')
+readoutOscillator_trace = StateMonitor(readoutOscillator, ['u','scale'], record=True)
+
 
 # ---------------------------------------------------------
 # Synapses
@@ -114,6 +124,9 @@ S1 = Synapses(htBurstingCells, interneuronCells, on_pre='I_syn_post += 1*pA')
 S1.connect()
 S2 = Synapses(interneuronCells, relayCells, on_pre='I_syn_post-=1*nA')
 S2.connect()
+S3 = Synapses(relayCells, readoutOscillator, on_pre='scale_post += 1.5')
+S3.connect()
+
 
 # ---------------------------------------------------------
 # Run network and plot results
@@ -130,13 +143,14 @@ htBurstingCells.I_ext = .2*nA
 run(simulationLength/2,report='stdout')
 
 # Plot results
-fig,ax = plt.subplots(3,1,sharex=True)
+fig,ax = plt.subplots(4,1,sharex=True)
 interneuron_spikeTrain = interneuron_spikes.spike_trains()[0]/ms
 ax[0].plot(htBursting_trace.t/ms, htBursting_trace.u[0], color='k', linewidth=.5)
 ax[1].plot(interneuron_trace.t/ms, np.mean(interneuron_trace.u,axis=0), color='k', linewidth=.5)
 # ax[1].scatter(interneuron_spikeTrain,np.zeros(shape=interneuron_spikeTrain.shape))
 ax[1].set_ylim([-.09,.02])
 ax[2].plot(trace_relayCells.t/ms, np.mean(trace_relayCells.u,axis=0), color='k', linewidth=.5)
+ax[3].plot(readoutOscillator_trace.t/ms, readoutOscillator_trace.u[0], color='k', linewidth=.5)
 plt.show()
 
 # Get spike time interavls
@@ -151,20 +165,3 @@ def getSpikeIntervals(spikes):
 
 # See whether spikes are more likely to be inline with oscillation peaks
 # plt.hist(spikeTrain % A); plt.show()
-
-
-
-# # -------------------------------
-# # Relay mode neurons (thalamocortical neuron) (Adex)
-# # -------------------------------
-# tau_I = 20*ms
-# relayMode = adexNeuron() + '''
-#     I = I_ext + I_syn : amp
-#     dI_syn/dt = -I_syn / tau_I: amp
-#     I_ext : amp
-# '''
-# relayCells = NeuronGroup(N=1, model=relayMode, threshold='u>20*mV', reset="u=Vr; w+=b", method='euler')
-# relayCells = initialiseAdexNeurons(relayCells, tau_w=144*ms, a=50*nS, b=0.0805*nA, Vr=-5*mV, VT=-65*mV)
-# relayCells.I_ext = 0.2*nA
-# trace_relayCells = StateMonitor(relayCells, ['u','I'], record=True)
-# S2 = Synapses(interneuronCells, relayCells, on_pre='I_syn_post-=.5*nA') # reset sawtooth on spike
