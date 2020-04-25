@@ -1,6 +1,7 @@
 # Computational Neuroscience Tools
 
 ## Simulations / modelling
+- <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/Brian/code/examples/alphaThetaNetwork">In-silico model of the contribution of the thalamus to cortical alpha power (inspired by Lőrincz et al., 2009; Neuron)</a>
 - <a href="https://michaelsmclayton.github.io/travellingWaves.html">Propagation of neural activity in 2-dimensional networks</a>
 - <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/Brian/code/examples/gapJunctions">Implementation of <i>Gap junction plasticity as a mechanism to regulate network-wide oscillations</i> (Pernelle, Nicola, & Clopath, 2018; PLoS Computational Biology)</a>
 - <a href="https://github.com/michaelsmclayton/BinocularNeuralNetwork">A TensorFlow implementation of the binocular neural network (Goncalves & Welchman, 2017; Current Biology)</a>
