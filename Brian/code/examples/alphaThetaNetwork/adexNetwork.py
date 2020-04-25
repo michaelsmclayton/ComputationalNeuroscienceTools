@@ -3,8 +3,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Simulation parameters
-simulationLength = 5000*ms
+simulationLength = 3000*ms
 externalInput = 1.0*nA
+baseInput = 0.25*nA
 
 # Common functions
 getOscPeriod = lambda freq : 1/(freq)/ms
@@ -13,7 +14,8 @@ sawtooth = lambda A, tS : '''%s*((((t/ms)-%s)/T)-floor(((t/ms)-%s)/T))''' % (A,t
 def sawtoothCycles(A,tS):
     return '''
     tC = '''+sawtooth(A,tS)+''': 1 # cycle time
-    dT/dt = (baseT-T)/second + (.01*xi_3*ms**-.5) : 1'''
+    T : 1
+    # dT/dt = (baseT-T)/second + (.01*xi_3*ms**-.5) : 1'''
 
 # Adaptive exponential integrate-and-fire model
 C = 281*pF # membrane capacitance
@@ -49,16 +51,14 @@ htBurstBasePeriod = getOscPeriod(8*Hz) # Note that the base frequency is 8Hz. Th
 htburst = adexNeuron() + '''
     I = I_ext + gamma*I_spont : amp
     I_spont = '''+gaussianInput(6,htBurstBasePeriod-5,25)+''' : amp # spontaneous firing
-    baseT = 1 / (baseFreq + maxFreqChange*(2*(1/(1+exp(-3*I_ext/nA)))-1)) / ms : 1
+    baseT = (1 / baseFreq) / ms : 1
     gamma = (1 / (1+exp(-3*(I_ext/nA)))): 1 # neuron excitability
     I_ext : amp
     baseFreq : hertz
-    maxFreqChange : hertz
 '''+sawtoothCycles(A=htBurstBasePeriod,tS='0')
 htBurstingCells = NeuronGroup(N=1, model=htburst, threshold='u>20*mV', reset="u=Vr; w+=b", method='euler')
 htBurstingCells = initialiseAdexNeurons(htBurstingCells, tau_w=144*ms, a=4*nS, b=0.0805*nA, Vr=-5*mV, VT=-40.4*mV, T=htBurstBasePeriod)
 htBurstingCells.baseFreq = 8*Hz
-htBurstingCells.maxFreqChange = 0*Hz
 
 # Define recordings
 htBursting_trace = StateMonitor(htBurstingCells, ['u','w','I'], record=True)
@@ -75,7 +75,7 @@ the cell will fire in the following pattern: a single spike around the start of 
 followed by a burst of spikes ~50% into the cycle'''
 interneuronBasePeriod = getOscPeriod(8*Hz)
 burstTime = .5*interneuronBasePeriod; burstWidth = burstTime/2 # moment and width of secondary, bursting activity
-tau_syn = 5*ms
+tau_syn = 5*ms; tau_gamma = 250*ms
 interneuron = adexNeuron() + '''
     I = I_ext + (gamma*I_exp + gamma**4*I_gaus) : amp # Note that I_gaus is multiplied by gamma^4, such that it smaller than I_exp other than when gamma ~= §
     I_exp = '''+gaussianInput(10,10,1)+''' : amp # (initial spike)
@@ -83,7 +83,7 @@ interneuron = adexNeuron() + '''
     dI_syn/dt = -I_syn/tau_syn: amp
     '''+sawtoothCycles(A=interneuronBasePeriod,tS='tS/ms')+'''
     tS : second
-    dgamma/dt = (.5-gamma) / (500*ms): 1 # neuron excitability
+    dgamma/dt = (.5-gamma) / tau_gamma: 1 # neuron excitability
     baseT = '''+str(interneuronBasePeriod)+''' : 1
     I_ext : amp
 '''
@@ -110,9 +110,11 @@ trace_relayCells = StateMonitor(relayCells, ['u','w','I_syn'], record=True)
 # Readout oscillator
 # -------------------------------
 tau = 50*ms
+def getSineFreq(freq,samplingRate=1000):
+    return ((freq/Hz)*(2*pi))/samplingRate
 readoutOscillatorEqs = '''
-    u = (scale + cos(pi+t/ms/20)) : 1
-    dscale/dt = (1-scale) / tau : 1'''
+    u = (scale + cos((pi/2) + (%s*t/ms))) : 1
+    dscale/dt = (1-scale) / tau : 1''' % (getSineFreq(freq=8*Hz))
 readoutOscillator = NeuronGroup(N=1, model=readoutOscillatorEqs, method='euler')
 readoutOscillator_trace = StateMonitor(readoutOscillator, ['u','scale'], record=True)
 
@@ -133,24 +135,21 @@ S3.connect()
 # ---------------------------------------------------------
 
 # Run simulation
-htBurstingCells.I_ext = externalInput
-run(simulationLength/3,report='stdout')
-htBurstingCells.I_ext = .2*nA
-run(simulationLength/2,report='stdout')
-htBurstingCells.I_ext = externalInput
-run(simulationLength/3,report='stdout')
-htBurstingCells.I_ext = .2*nA
-run(simulationLength/2,report='stdout')
+for i in range(3):
+    htBurstingCells.I_ext = externalInput
+    run(simulationLength,report='stdout')
+    htBurstingCells.I_ext = baseInput
+    run(simulationLength,report='stdout')
 
 # Plot results
 fig,ax = plt.subplots(4,1,sharex=True)
-interneuron_spikeTrain = interneuron_spikes.spike_trains()[0]/ms
-ax[0].plot(htBursting_trace.t/ms, htBursting_trace.u[0], color='k', linewidth=.5)
+ax[0].plot(trace_relayCells.t/ms, np.mean(trace_relayCells.u,axis=0), color='k', linewidth=.5)
 ax[1].plot(interneuron_trace.t/ms, np.mean(interneuron_trace.u,axis=0), color='k', linewidth=.5)
-# ax[1].scatter(interneuron_spikeTrain,np.zeros(shape=interneuron_spikeTrain.shape))
-ax[1].set_ylim([-.09,.02])
-ax[2].plot(trace_relayCells.t/ms, np.mean(trace_relayCells.u,axis=0), color='k', linewidth=.5)
+# interneuron_spikeTrain = interneuron_spikes.spike_trains()[0]/ms
+# ax[2].scatter(interneuron_spikeTrain,np.zeros(shape=interneuron_spikeTrain.shape))
+ax[2].plot(htBursting_trace.t/ms, htBursting_trace.u[0], color='k', linewidth=.5)
 ax[3].plot(readoutOscillator_trace.t/ms, readoutOscillator_trace.u[0], color='k', linewidth=.5)
+# ax[1].set_ylim([-.09,.02])
 plt.show()
 
 # Get spike time interavls
@@ -165,3 +164,9 @@ def getSpikeIntervals(spikes):
 
 # See whether spikes are more likely to be inline with oscillation peaks
 # plt.hist(spikeTrain % A); plt.show()
+
+plt.subplot(2,1,1)
+plt.plot(readoutOscillator_trace.t/ms, readoutOscillator_trace.u[0], color='k', linewidth=.5)
+plt.subplot(2,1,2)
+plt.plot(htBursting_trace.t/ms, htBursting_trace.T[0], color='k', linewidth=.5)
+plt.show()
