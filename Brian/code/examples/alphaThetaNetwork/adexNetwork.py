@@ -155,7 +155,12 @@ ax[2].plot(interneuron_trace.t/ms, np.mean(interneuron_trace.u,axis=0), color='k
 ax[3].plot(htBursting_trace.t/ms, htBursting_trace.u[0], color='k', linewidth=.5)
 ax[4].plot(htBursting_trace.t/ms, htBursting_trace.I_ext[0], color='k', linewidth=.5)
 ax[4].set_ylim([-.5*nA,1.5*nA]/amp)
-plt.tight_layout()
+# plt.xlim([1200,2800]) # For looking at low input, high alpha sections
+# plt.xlim([3600,5200]) # For looking at high input, low alpha sections
+fig.tight_layout()
+[ax[i].axis('off') for i in range(len(ax))] 
+fig.set_figheight(8)
+fig.set_figwidth(6)
 plt.show()
 
 # Get spike time interavls
