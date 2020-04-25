@@ -61,7 +61,7 @@ htBurstingCells = initialiseAdexNeurons(htBurstingCells, tau_w=144*ms, a=4*nS, b
 htBurstingCells.baseFreq = 8*Hz
 
 # Define recordings
-htBursting_trace = StateMonitor(htBurstingCells, ['u','w','I'], record=True)
+htBursting_trace = StateMonitor(htBurstingCells, ['u','w','I','I_ext'], record=True)
 htBursting_spikes = SpikeMonitor(htBurstingCells)
 
 
@@ -113,43 +113,49 @@ tau = 50*ms
 def getSineFreq(freq,samplingRate=1000):
     return ((freq/Hz)*(2*pi))/samplingRate
 readoutOscillatorEqs = '''
-    u = (scale + cos((pi/2) + (%s*t/ms))) : 1
-    dscale/dt = (1-scale) / tau : 1''' % (getSineFreq(freq=8*Hz))
+    u = ((scale+scale_syn) + cos((%s*t/ms))) : 1
+    dscale/dt = (1-scale) / tau : 1
+    scale_syn = %s*exp(-(((t-tSpike)/ms)**2)/%s) : 1
+    tSpike : second
+    ''' % (getSineFreq(freq=8*Hz),1,1000)
 readoutOscillator = NeuronGroup(N=1, model=readoutOscillatorEqs, method='euler')
-readoutOscillator_trace = StateMonitor(readoutOscillator, ['u','scale'], record=True)
+readoutOscillator_trace = StateMonitor(readoutOscillator, ['u','scale','scale_syn'], record=True)
 
 
 # ---------------------------------------------------------
 # Synapses
 # ---------------------------------------------------------
-S1 = Synapses(htBurstingCells, interneuronCells, on_pre='I_syn_post += 1*pA')
+S1 = Synapses(htBurstingCells, interneuronCells, on_pre='I_syn_post += 1*pA', method='euler')
 S1.connect()
-S2 = Synapses(interneuronCells, relayCells, on_pre='I_syn_post-=1*nA')
+S2 = Synapses(interneuronCells, relayCells, on_pre='I_syn_post-=1*nA', method='euler')
 S2.connect()
-S3 = Synapses(relayCells, readoutOscillator, on_pre='scale_post += 1.5')
+S3 = Synapses(relayCells, readoutOscillator, on_pre='tSpike = t+(62.5*ms)', method='euler')
 S3.connect()
-
 
 # ---------------------------------------------------------
 # Run network and plot results
 # ---------------------------------------------------------
 
 # Run simulation
-for i in range(3):
-    htBurstingCells.I_ext = externalInput
-    run(simulationLength,report='stdout')
+for i in range(2):
     htBurstingCells.I_ext = baseInput
     run(simulationLength,report='stdout')
+    htBurstingCells.I_ext = externalInput
+    run(simulationLength,report='stdout')
+htBurstingCells.I_ext = baseInput
+run(simulationLength,report='stdout')
 
 # Plot results
-fig,ax = plt.subplots(4,1,sharex=True)
-ax[0].plot(trace_relayCells.t/ms, np.mean(trace_relayCells.u,axis=0), color='k', linewidth=.5)
-ax[1].plot(interneuron_trace.t/ms, np.mean(interneuron_trace.u,axis=0), color='k', linewidth=.5)
+fig,ax = plt.subplots(5,1,sharex=True)
+ax[0].plot(readoutOscillator_trace.t/ms, readoutOscillator_trace.u[0], color='k', linewidth=.5)
+ax[1].plot(trace_relayCells.t/ms, np.mean(trace_relayCells.u,axis=0), color='k', linewidth=.5)
+ax[2].plot(interneuron_trace.t/ms, np.mean(interneuron_trace.u,axis=0), color='k', linewidth=.5)
 # interneuron_spikeTrain = interneuron_spikes.spike_trains()[0]/ms
-# ax[2].scatter(interneuron_spikeTrain,np.zeros(shape=interneuron_spikeTrain.shape))
-ax[2].plot(htBursting_trace.t/ms, htBursting_trace.u[0], color='k', linewidth=.5)
-ax[3].plot(readoutOscillator_trace.t/ms, readoutOscillator_trace.u[0], color='k', linewidth=.5)
-# ax[1].set_ylim([-.09,.02])
+# ax[1].scatter(interneuron_spikeTrain,np.zeros(shape=interneuron_spikeTrain.shape))
+ax[3].plot(htBursting_trace.t/ms, htBursting_trace.u[0], color='k', linewidth=.5)
+ax[4].plot(htBursting_trace.t/ms, htBursting_trace.I_ext[0], color='k', linewidth=.5)
+ax[4].set_ylim([-.5*nA,1.5*nA]/amp)
+plt.tight_layout()
 plt.show()
 
 # Get spike time interavls
@@ -165,8 +171,9 @@ def getSpikeIntervals(spikes):
 # See whether spikes are more likely to be inline with oscillation peaks
 # plt.hist(spikeTrain % A); plt.show()
 
-plt.subplot(2,1,1)
-plt.plot(readoutOscillator_trace.t/ms, readoutOscillator_trace.u[0], color='k', linewidth=.5)
-plt.subplot(2,1,2)
-plt.plot(htBursting_trace.t/ms, htBursting_trace.T[0], color='k', linewidth=.5)
-plt.show()
+# plt.subplot(2,1,1)
+# plt.plot(readoutOscillator_trace.t/ms, readoutOscillator_trace.u[0], color='k', linewidth=.5)
+# plt.subplot(2,1,2)
+# plt.plot(readoutOscillator_trace.t/ms, readoutOscillator_trace.scale_syn[0], color='k', linewidth=.5)
+# plt.show()
+
