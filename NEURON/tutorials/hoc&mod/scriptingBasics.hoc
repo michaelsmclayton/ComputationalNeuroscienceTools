@@ -1,0 +1,217 @@
+// see http://www.cs.stir.ac.uk/~bpg/Teaching/31YF/Neuron/Tuts4.3/prog1.html
+
+
+// ------------------------------------------------------------------------------------------------------------
+//                                     AN INTRODUCTION TO WORKING WITH NEURON
+// ------------------------------------------------------------------------------------------------------------
+
+/* NEURON is an extensible nerve modeling and simulation program. It allows you to create complex nerve models by
+connecting multiple one-dimensional sections together to form arbitrary cell morphologies, and allows you to insert
+multiple membrane properties into these sections.
+
+This set of tutorials will take you, step by step, through the process of creating a complex simulation. Specifically,
+we aim to model a simple four neuron system with three of the cells making synaptic connections to the fourth. Each of
+these cells have basically the same morphology: a single axon with minimal arborization at the end and several main
+dendritic trunks with complex branching. We believe there are Hodgkin-Huxley type ion channels in the axon and possibly
+in the soma, but are uncertain what type of channels are in the dendrites. We have intracellular somatic voltage measurements
+in the post-synaptic cell from current injections in the somas of the three other cells
+
+Before doing this, however, we will first cover how to save and load scripts in NEURON. */
+
+// ---------------------------------------------
+// Saving .hoc files
+// ---------------------------------------------
+
+/* The NEURON command line can be started by entering 'nrniv' into the command line. Once you have done this, you should see a
+printout of the current software version, copyright, etc., and a new prompt "oc>". This is the NEURON command line, and can
+be used to enter commands. You can also run the NEURON GUI by entering 'nrngui'
+
+If you want to save a script, this can be done by saving a '.hoc' file. Note that this file must have a name of 8 characters or
+less in length for this to work, and the folders in which the file lives are also bound by this naming restriction. Furthermore,
+the .hoc file by start with the following line of code, which ensures that all the standard library functions are loaded at the
+start of the script*/
+
+xopen("$(NEURONHOME)/lib/hoc/noload.hoc")
+
+// ---------------------------------------------
+// Running .hoc files
+// ---------------------------------------------
+// With your .hoc files appropriately named and saved, these files can be run entering the following command at the terminal:
+
+//      nrniv $(HOCFILE) -
+
+/* Note here that HOCFILE must be a valid file with a .hoc extension (e.g. scriptingBasics.hoc). Importantly too, the addition of
+the '-' means that you will still have access to the NEURON command line once the script has run. Without this '-', the script will
+run your program and then return you straight back to the operating system prompt. (In this sense, it is equivalent to the '-i'
+flag when running a Python script from the terminal) */
+
+
+
+// ------------------------------------------------------------------------------------------------------------
+//                                     CREATING AND ACCESSING NEURAL SECTIONS
+// ------------------------------------------------------------------------------------------------------------
+
+// ---------------------------------------------
+// Creating structures
+// ---------------------------------------------
+
+/* The simplest neural structure one could make is a cell body, with no axon or dendrites. We can make a cell
+soma using the command below. This creates a new section (a cell body in this case) with the default properties
+(the number of segments in the section [1], the diameter [500 um], the length [100 um], the capacitance [1 uF/cm^2],
+the axial resistance used to connect sections together [34.5 ohm-cm] and the membrane voltage [-65 mV]).*/
+create soma
+
+// ---------------------------------------------
+// Modifying structure properties
+// ---------------------------------------------
+
+/* These default properties may be fine. However, from our experimental measurements, we know that we want our cell model
+to be approximately 100 um in length, and an average diameter of about 100 um. Therefore, we need to change one of our soma's
+properties: the diameter of the section (diam) and the length of the section (L). but for program clarity, it is also advisable
+to set the number of segments (nseg).
+
+Since NEURON deals with many different sections each with their own unique name, we must tell NEURON which section we want to
+access and modify a section parameter. There are three ways to do this in NEURON. One way is to explicitly access the section.
+This tells NEURON that all subsequent references to properties of a section are intended for the soma. An example is show below: */
+access soma
+nseg = 1
+diam = 100
+L = 100
+
+/* An alternative method to access section properties is to use dot notation (i.e. state the section name followed by a dot, and
+then followed by the property name you want to change. (Note that, with this method (dot notation), the currently accessed section
+is not changed. An example of this method is also shown below: */
+soma.nseg = 1
+soma.diam = 100
+soma.L = 100
+// Note that this system also works without the dots (i.e. 'soma diam = 100' works the same as 'soma.diam = 100')
+
+/* The third way of changing structure properties is to group multiple properties between braces:*/
+soma {
+    nseg = 1
+    diam = 100
+    L = 100
+}
+
+// ---------------------------------------------
+// Retrieving structure properties
+// ---------------------------------------------
+/* One way to retrieve the value is with the print command. If you have a currently accessed section (from the access command),
+you can print a property of that section with: */
+print diam
+// or you can print the property of any section by using the dot notation:
+print soma.diam
+
+/* We can also print structure properties using the psection() function. (Note that if a section is already accessed, just
+psection() on it's own will suffice): */
+soma psection()
+
+// Alternatively, we can to list the properties of all sections in the model by calling:
+forall psection()
+
+
+// ------------------------------------------------------------------------------------------------------------
+//                                       INSERTING MEMBRANE PROPERTIES
+// ------------------------------------------------------------------------------------------------------------
+/* Each section in NEURON has the default properties automatically inserted. However, other mechanisms (e.g., channels)
+with their own properties must be explicitly inserted into a section.
+NEURON includes two built-in channel membrane mechanisms: Hodgkin-Huxley channels (hh) and passive channels (pas). Each
+of these mechanisms can be inserted using the insert command. If there is a currently accessed section, you can insert a new
+mechanism into that section using the following code: */
+insert hh
+
+// Alternatively, you can also use the second method above to insert a new mechanism:
+soma insert pas
+
+/* When you add a new membrane mechanism to a section, you add the new membrane mechanism's properties and their default values
+to the section. For example, if you add passive channels to the section, you will introduce two new properties to the section:
+     - g_pas (specific membrane conductance [S/cm^2])
+     - e_pas (reversal potential [mV]).
+
+The Hodgkin-Huxley channels are more complex, and add the following new properties to the section:
+     - gnabar_hh: The maximum specific sodium channel conductance [Default value = 0.120 S/cm^2]
+     - gkbar_hh: The maximum specific potassium channel conductance [Default value = 0.036 S/cm^2]
+     - gl_hh: The maximum specific leakage conductance [Default value = 0.0003 S/cm^2]
+     - ena: The reversal potential for the sodium channel [Default value = 50 mV]
+     - ek: The reversal potential for the potassium channel [Default value = -77 mV]
+     - el_hh: The reversal potential for the leakage channel [Default value = -54.3 mV]
+     - It also adds the following state variables, that can be displayed with the print command:
+     - m_hh: The sodium activation state variable
+     - n_hh: The sodium inactivation state variable
+     - h_hh: The potassium activation state variable
+     - ina: The sodium current
+     - ik: The potassium current
+
+You can also define other membrane mechanisms with their own properties using the model description language (i.e. .mod) */
+
+
+// ------------------------------------------------------------------------------------------------------------
+//                                         ADDING POINT PROCESSES
+// ------------------------------------------------------------------------------------------------------------
+
+/* NEURON makes the distinction between mechanisms that are attributed to an entire section (e.g., HH channels) and mechanisms
+that are associated with a particular point in the section (e.g., voltage clamp or synapse). While the former is most conveniently
+expressed in terms of per unit area, the point processes are more conveniently expressed in absolute terms (e.g., current injection
+is usually expressed in terms of nA instead of nA/cm^2). Point processes also differ in that you insert several in the same segment */
+
+/* In NEURON, point processes are handled as objects which means that to create one you need to first create an object variable to be
+associated with the object and then create a new object. To declare object variables, you enter the following: */
+objectvar stim
+
+/* This creates (or initialises) an object variable named stim. Now you can to create the actual object. Newly created objects need to
+be associated with a particular section, so we need to either have a currently accessed section or to specify the section name with which
+the object is to be associated. The optional section name is given first, followed by the assignment of the object variable to a new instance
+of a particular object (in this case a pulse stimulus [or IClamp]), with the location of the object in the section given in parentheses. The
+location is specified with a number between 0 and 1 (inclusive) where the number represents the percent along the section to place the point
+process. Therefore, in the code below, 0.5 represents the center of the neural section: */
+soma stim = new IClamp(0.5)
+// stim = new IClamp(0.5) // if soma is currently accessed
+
+/* There are several built-in point processes: IClamp, VClamp and AlphaSynapse. Additional point processes can be added to the simulator with
+the model description language (i.e. .mod). As with channels, each point process has its own set of properties. Below are the IClamp and
+AlphaSynapse point processes' properties (we will only be using these two in the tutorials).
+    IClamp:
+        - del: The delay until the onset of the stimulus (in ms)
+        - dur: The duration of the stimulus (in ms)
+        - amp: The amplitude of the stimulus (in nA)
+    AlphaSynapse:
+        - onset: The delay until the onset of the conductance change (in ms)
+        - tau: The time until the maximum conductance (in ms)
+        - gmax: The maximum conductance of the post-synaptic conductance change (in uohm)
+        - e: The reversal potential of the post-synaptic conductance change (in mV) */
+
+// ---------------------------------------------
+// Modifying point process properties
+// ---------------------------------------------
+
+/* In our model, we want to stimulate the soma by giving it a current pulse. We can accomplish this by adding a IClamp as above and then
+setting its properties. Point processes (and other objects) differ from sections in that there is no concept of a currently accessed point
+process. Thus, we cannot set the properties in all the same ways we set them in sections. Rather, we must use the dot notation: */
+stim.del = 0
+stim.dur = 0.1
+stim.amp = 300
+
+
+// ------------------------------------------------------------------------------------------------------------
+//                              RUNNING A SIMULATION (and defining procedures)
+// ------------------------------------------------------------------------------------------------------------
+
+/* To ease the process of running simulations, NEURON has a standard run library of useful functions. These library functions are used to
+initialize the simulator, begin and end simulations, and plot variables vs. time or space during a simulation run. The most useful of
+these functions is the run() function. It initializes and runs a simulation. As the default, simulations run for 5 ms of simulated time,
+but this can be changed by setting the tstop variable to another value (in ms). */
+
+/* In NEURON, you can define procedures with the proc statement. It contains three parts: the proc keyword, the name of the procedure you
+want to define, and the statements you want to be in the procedure. The parentheses after the name are required, as they tell NEURON that
+this is a procedure name and not a variable. Arguments can be passed to this function, and they are accessed via the $# variable where #
+is the number of the argument. In the current example, tstop is assigned the value of the first parameter passed to the rununtil procedure */
+
+// Function to run simulation for a duration, given by the first function input
+proc rununtil() {
+    tstop = $1
+    run()
+    print "V = ", soma.v, "mV"
+}
+
+simDur = 100 // define simulation duration
+rununtil(simDur) // run simulation
