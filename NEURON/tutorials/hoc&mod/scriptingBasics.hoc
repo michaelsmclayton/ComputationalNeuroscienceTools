@@ -1,5 +1,7 @@
-// see http://www.cs.stir.ac.uk/~bpg/Teaching/31YF/Neuron/Tuts4.3/prog1.html
-
+/* see http://www.cs.stir.ac.uk/~bpg/Teaching/31YF/Neuron/Tuts4.3/prog1.html
+       http://www.cs.stir.ac.uk/~bpg/Teaching/31YF/Neuron/Tuts4.3/prog2.html
+       http://web.mit.edu/neuron_v7.4/nrntuthtml/tutorial/tutA.html
+*/
 
 // ------------------------------------------------------------------------------------------------------------
 //                                     AN INTRODUCTION TO WORKING WITH NEURON
@@ -45,7 +47,7 @@ the '-' means that you will still have access to the NEURON command line once th
 run your program and then return you straight back to the operating system prompt. (In this sense, it is equivalent to the '-i'
 flag when running a Python script from the terminal) */
 
-
+load_file("nrngui.hoc")
 
 // ------------------------------------------------------------------------------------------------------------
 //                                     CREATING AND ACCESSING NEURAL SECTIONS
@@ -89,8 +91,9 @@ soma.L = 100
 /* The third way of changing structure properties is to group multiple properties between braces:*/
 soma {
     nseg = 1
-    diam = 100
-    L = 100
+    diam = 18.8
+    L = 18.8
+    Ra = 123.0
 }
 
 // ---------------------------------------------
@@ -164,8 +167,8 @@ the object is to be associated. The optional section name is given first, follow
 of a particular object (in this case a pulse stimulus [or IClamp]), with the location of the object in the section given in parentheses. The
 location is specified with a number between 0 and 1 (inclusive) where the number represents the percent along the section to place the point
 process. Therefore, in the code below, 0.5 represents the center of the neural section: */
-soma stim = new IClamp(0.5)
-// stim = new IClamp(0.5) // if soma is currently accessed
+//soma stim = new IClamp(0.5)
+stim = new IClamp(0.5) // if soma is currently accessed
 
 /* There are several built-in point processes: IClamp, VClamp and AlphaSynapse. Additional point processes can be added to the simulator with
 the model description language (i.e. .mod). As with channels, each point process has its own set of properties. Below are the IClamp and
@@ -187,9 +190,9 @@ AlphaSynapse point processes' properties (we will only be using these two in the
 /* In our model, we want to stimulate the soma by giving it a current pulse. We can accomplish this by adding a IClamp as above and then
 setting its properties. Point processes (and other objects) differ from sections in that there is no concept of a currently accessed point
 process. Thus, we cannot set the properties in all the same ways we set them in sections. Rather, we must use the dot notation: */
-stim.del = 0
-stim.dur = 0.1
-stim.amp = 300
+stim.del = 100 // delay
+stim.dur = 100// duration
+stim.amp = .5 // amplitude
 
 
 // ------------------------------------------------------------------------------------------------------------
@@ -210,8 +213,30 @@ is the number of the argument. In the current example, tstop is assigned the val
 proc rununtil() {
     tstop = $1
     run()
-    print "V = ", soma.v, "mV"
+    // print "V = ", soma.v, "mV"
 }
 
-simDur = 100 // define simulation duration
-rununtil(simDur) // run simulation
+// ---------------------------------------------
+// Make voltage graph, and then run simulation
+// ---------------------------------------------
+
+// Define simulation duration
+simDur = 300 
+
+// Create graph object
+objref vg
+vg = new Graph(0) // produces a graph window object with x and y axes on the screen.
+graphList[0].append(vg) // graphList[0] is for all objects that are to be updated
+
+// Set axis and window size
+xMin = 0
+xMax = simDur
+yMin = 40
+yMax = -75
+vg.view(xMin, yMax, xMax, abs(yMax-yMin), 200, 200, 800, 400) // (mleft, mbottom, mwidth, mheight, wleft, wtop, wwidth, wheight)
+
+// Add soma voltage to graph data
+vg.addexpr("soma.v(.5)")
+
+// Run simulation
+rununtil(simDur)
