@@ -1,0 +1,101 @@
+/* see http://web.mit.edu/neuron_v7.4/nrntuthtml/tutorial/tutB.html */
+
+xopen("$(NEURONHOME)/lib/hoc/noload.hoc") // load standard library NEURON functions
+load_file("nrngui.hoc") // load NEURON GUI
+
+// ------------------------------------------------------------------------------------------------------------
+//                                            CREATE NEURAL SECTIONS
+// ------------------------------------------------------------------------------------------------------------
+
+// ---------------------------------------------
+// Create neural soma and dendrites
+// ---------------------------------------------
+/* NEURON works with cylindrical sections. Here, we will create a neuron consisting of three sections:
+a soma, and two dendrites. This can be done using the code below: */
+ndend = 2
+create soma, dend[ndend] // note here that multiple sections can be creating in a single line, using commas
+
+// ---------------------------------------------
+// Define soma properties
+// ---------------------------------------------
+/* After creating these neural sections, we need to set their properties and add their channels. We do this
+below for the cell soma using curly brackets (setting the number of segments, the diameter and length of the
+soma as well as insert Hodgkin-Huxley channels): */
+soma {
+    nseg = 1
+    diam = 18.8
+    L = 18.8
+    Ra = 123.0
+    insert hh
+}
+
+// ---------------------------------------------
+// Note on the importance of the number of section compartments for accurate modelling
+// ---------------------------------------------
+/* We also want to add properties to our dendrites. To increase the spatial resolution of the dendrite, we can
+increase the number of segments in the section (i.e. dendrite). In cable theory terms, this has the effect of
+increasing the spatial resolution of the cable equation, and is important for accurate simulations. Note,
+however, if the number of segments is too large, the simulation will be computationally inefficient. Therefore,
+it is important to analyse the effects of spatial resolution on the results (in addition to other analyses),
+in order to achieve both efficient and accurate simulation results).
+
+NEURON distingusihes between sections (high level conceptual modelling construct) and segments (low level numerical
+simulation detail) to allow one to create models that do not rely on the number of segments (or compartments). Rather,
+you can create a model entirely independent of the numerical details. Then, if during the analysis you find you need
+to increase the spatial resolution in a certain part of the model, you can do so simply by increasing nseg for that
+section */
+
+// ---------------------------------------------
+// Define dendrite properties
+// ---------------------------------------------
+/* For our simulation, we are interested in seeing the potentials travel along the dendrites, so we want to increase the
+number of segments. Therefore, we define our dendrites to both have five segments. We can do this using followng for loop: */
+for i = 0, ndend-1 dend[i] {
+    nseg = 5
+    Ra = 123
+    insert pas
+}
+
+/* However, we may want our dendrites to have some properties that differ from one another. We can do this using dot
+notation (as shown below): */
+dend[0].diam = 3.18
+dend[0].L = 701.9
+dend[1].diam = 2.0
+dend[1].L = 549.1
+
+
+// ------------------------------------------------------------------------------------------------------------
+//                                          CONNECTING THE SECTIONS
+// ------------------------------------------------------------------------------------------------------------
+
+/* Now that we have all of the sections created and their properties set, we need to connect them together. In NEURON, to
+refer to specific points along a section, we use the section name followed by a number between 0 and 1 in parenthesis.
+This number represents the distance along the section. For example, dend[0](0) refers to a point at the proximal end of
+dendrite 0 (i.e. located next to the soma), dend[0](1) refers to a point at the distal end of that dendrite, and dend[0](0.2)
+refers to a point 20% down the dendrite (i.e. away from the soma). We use this notation to specify exactly what point of one
+section connects to what point on another section, as well as where to place point processes (e.g. electrical stimulation)
+in a given section.
+
+// ---------------------------------------------
+// A note on the effects of nsegs on defining section locations
+// ---------------------------------------------
+/* You will notice that the use of percentages means that the aforementioned method of specifying a point on the section is
+conceptually independent of the number of segments in the section. In other words, 'dend(.1)' should, in theory, always refer
+to a position 10% down the dendrite. However, it is important to remember that the number of section segments can significantly
+affect the location of a section that is refered to. For example, if a section has only 1 segment, and a location of .1 is
+specified, this may in practice refer to a position of 0.5. (The logic here is that there is only 1 segment to refer to, so it
+can only refer to that one segment). However, increasing the number of segements to, say, 3, does not automatially fix this issue.
+With nsegs increased to 3, a synapse placed at .1 may still, in practice, be positioned at .5 (due to the issue explained above).
+Consequently, it is always best to specify the number of section segments before attaching synapses or point processes. However,
+if this is not possibe, it is possible to re-position the point processes by using their loc() function. For example, if we had
+a clamp called stim, we could move stim to 0.1 with the hoc statement 'stim.loc(0.1)' and this would move the point process as
+close to 10% down to attached section as possible. */
+
+// ---------------------------------------------
+// Connecting sections
+// ---------------------------------------------
+/* For our simulation, we are going to connect the soma and the dendrites together. We use the 'connect' command to accomplish
+this (passing the sections we want to connect, divided by a comma). Note here that the first dendrite is connected to one side
+of the soma (i.e. 'soma(0'), while the second dendrite is connected to the other side of the soma (i.e. 'soma(1'): */
+connect dend[0](0), soma(0)
+connect dend[1](0), soma(1)
