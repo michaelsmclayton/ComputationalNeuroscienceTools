@@ -1,7 +1,6 @@
 /* see http://www.cs.stir.ac.uk/~bpg/Teaching/31YF/Neuron/Tuts4.3/prog1.html
        http://www.cs.stir.ac.uk/~bpg/Teaching/31YF/Neuron/Tuts4.3/prog2.html
-       http://web.mit.edu/neuron_v7.4/nrntuthtml/tutorial/tutA.html
-*/
+       http://web.mit.edu/neuron_v7.4/nrntuthtml/tutorial/tutA.html */
 
 // ------------------------------------------------------------------------------------------------------------
 //                                     AN INTRODUCTION TO WORKING WITH NEURON
@@ -9,16 +8,10 @@
 
 /* NEURON is an extensible nerve modeling and simulation program. It allows you to create complex nerve models by
 connecting multiple one-dimensional sections together to form arbitrary cell morphologies, and allows you to insert
-multiple membrane properties into these sections.
-
-This set of tutorials will take you, step by step, through the process of creating a complex simulation. Specifically,
-we aim to model a simple four neuron system with three of the cells making synaptic connections to the fourth. Each of
-these cells have basically the same morphology: a single axon with minimal arborization at the end and several main
-dendritic trunks with complex branching. We believe there are Hodgkin-Huxley type ion channels in the axon and possibly
-in the soma, but are uncertain what type of channels are in the dendrites. We have intracellular somatic voltage measurements
-in the post-synaptic cell from current injections in the somas of the three other cells
-
-Before doing this, however, we will first cover how to save and load scripts in NEURON. */
+multiple membrane properties into these sections. In this script, we will cover some of the basics of scripting in
+NEURON using HOC. Specifically, we will learn how to run and save .hoc files, create neural sections with given
+properties and membrane dynamics, create point processes to stimulate this section electrically, and finally run
+the simulation and plot the results. */
 
 // ---------------------------------------------
 // Saving .hoc files
@@ -35,6 +28,8 @@ start of the script*/
 
 xopen("$(NEURONHOME)/lib/hoc/noload.hoc")
 
+// load_file("nrngui.hoc") // code to load NEURON GUI
+
 // ---------------------------------------------
 // Running .hoc files
 // ---------------------------------------------
@@ -46,8 +41,6 @@ xopen("$(NEURONHOME)/lib/hoc/noload.hoc")
 the '-' means that you will still have access to the NEURON command line once the script has run. Without this '-', the script will
 run your program and then return you straight back to the operating system prompt. (In this sense, it is equivalent to the '-i'
 flag when running a Python script from the terminal) */
-
-load_file("nrngui.hoc")
 
 // ------------------------------------------------------------------------------------------------------------
 //                                     CREATING AND ACCESSING NEURAL SECTIONS
@@ -94,6 +87,7 @@ soma {
     diam = 18.8
     L = 18.8
     Ra = 123.0
+    // insert hh // note that this will also let you insert membrane dynamics into a section
 }
 
 // ---------------------------------------------
@@ -149,7 +143,7 @@ You can also define other membrane mechanisms with their own properties using th
 
 
 // ------------------------------------------------------------------------------------------------------------
-//                                         ADDING POINT PROCESSES
+//                                            ADDING POINT PROCESSES
 // ------------------------------------------------------------------------------------------------------------
 
 /* NEURON makes the distinction between mechanisms that are attributed to an entire section (e.g., HH channels) and mechanisms
@@ -167,8 +161,8 @@ the object is to be associated. The optional section name is given first, follow
 of a particular object (in this case a pulse stimulus [or IClamp]), with the location of the object in the section given in parentheses. The
 location is specified with a number between 0 and 1 (inclusive) where the number represents the percent along the section to place the point
 process. Therefore, in the code below, 0.5 represents the center of the neural section: */
-//soma stim = new IClamp(0.5)
-stim = new IClamp(0.5) // if soma is currently accessed
+soma stim = new IClamp(0.5)
+//stim = new IClamp(0.5) // if soma is currently accessed
 
 /* There are several built-in point processes: IClamp, VClamp and AlphaSynapse. Additional point processes can be added to the simulator with
 the model description language (i.e. .mod). As with channels, each point process has its own set of properties. Below are the IClamp and
@@ -196,7 +190,7 @@ stim.amp = .5 // amplitude
 
 
 // ------------------------------------------------------------------------------------------------------------
-//                              RUNNING A SIMULATION (and defining procedures)
+//                                 RUNNING A SIMULATION (and defining procedures)
 // ------------------------------------------------------------------------------------------------------------
 
 /* To ease the process of running simulations, NEURON has a standard run library of useful functions. These library functions are used to
