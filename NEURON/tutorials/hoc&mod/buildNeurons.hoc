@@ -27,6 +27,28 @@ soma {
     L = 18.8
     Ra = 123.0
     insert hh
+    gnabar_hh = 0.25 // note here (and below) that you can change channel current properties within these curly brackets
+    gl_hh = .0001666
+    el_hh = -60.0
+    insert pas
+    g_pas = .0001667
+    e_pas = -60.0
+}
+
+// ---------------------------------------------
+// Note on simulating blocking channels (using procedures)
+// ---------------------------------------------
+/* At some point, we may want to simulate the effect of blocking (or unblocking certain channels). We can do this easily
+by defining procedures. When the procedure below is called, the gnabar of the hh channel for the soma section will be
+changed to 0: */
+proc block_sodium() {
+    soma gnabar_hh = 0
+}
+
+/* We can also use procedures to unblock a channel, or vary it's level of blocking. In the procedure below, the gnabar of
+the hh channel for the soma section is varied, depending on the value of the first input to the procedure: */
+proc block_sodium() {
+    soma gnabar_hh = $1 * 0.25
 }
 
 // ---------------------------------------------
@@ -59,7 +81,7 @@ for i = 0, ndend-1 dend[i] {
 /* However, we may want our dendrites to have some properties that differ from one another. We can do this using dot
 notation (as shown below): */
 dend[0].diam = 3.18
-dend[0].L = 701.9
+dend[0].L = 1001.9
 dend[1].diam = 2.0
 dend[1].L = 549.1
 
@@ -99,3 +121,32 @@ this (passing the sections we want to connect, divided by a comma). Note here th
 of the soma (i.e. 'soma(0'), while the second dendrite is connected to the other side of the soma (i.e. 'soma(1'): */
 connect dend[0](0), soma(0)
 connect dend[1](0), soma(1)
+
+
+// ------------------------------------------------------------------------------------------------------------
+//                                          ADD STIMULATOR AND RUN
+// ------------------------------------------------------------------------------------------------------------
+
+// Add stimulator
+objectvar stim
+stim = new IClamp(0.5)
+stim.del = 100
+stim.dur = 100
+stim.amp = 0.75
+
+// Set simulation parameters
+v_init = -65 // Set initial value of the membrane potential
+tstop = 300 // Simulation end time
+
+// Create graph object
+objref vg
+vg = new Graph(0) // produces a graph window object with x and y axes on the screen.
+graphList[0].append(vg) // graphList[0] is for all objects that are to be updated
+vg.view(0, -75, tstop, 110, 200, 200, 800, 400) // set axes and window size
+vg.addexpr("soma.v(.5)")
+vg.addexpr("dend[0].v(0.9)")
+vg.addexpr("dend[1].v(0.9)")
+
+// Run simulation
+run()
+
