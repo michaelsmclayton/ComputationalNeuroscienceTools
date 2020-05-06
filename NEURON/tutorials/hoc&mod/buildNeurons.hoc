@@ -147,6 +147,16 @@ vg.addexpr("soma.v(.5)")
 vg.addexpr("dend[0].v(0.9)")
 vg.addexpr("dend[1].v(0.9)")
 
+// Create graph to show varying activity across a dendrite
+objref vg1
+vg1 = new Graph(0) // produces a graph window object with x and y axes on the screen.
+graphList[0].append(vg1) // graphList[0] is for all objects that are to be updated
+vg1.view(0, -75, tstop, 40, 200, 200, 800, 400) // set axes and window size
+vg1.addexpr("dend[0].v(0.25)")
+vg1.addexpr("dend[0].v(0.5)")
+vg1.addexpr("dend[0].v(0.75)")
+vg1.addexpr("dend[0].v(1.0)")
+
 // Run simulation
 run()
 
