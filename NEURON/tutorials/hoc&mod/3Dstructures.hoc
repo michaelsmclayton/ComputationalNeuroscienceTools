@@ -1,0 +1,162 @@
+/* see http://web.mit.edu/neuron_v7.4/nrntuthtml/tutorial/tutB.html */
+
+xopen("$(NEURONHOME)/lib/hoc/noload.hoc") // load standard library NEURON functions
+load_file("nrngui.hoc") // load NEURON GUI
+
+/* In this script, we will cover how to introduce 3D spatial information into a neural model (i.e. where
+to place in 3D space dendrites and neurons), how to define multiple neurons using templates, and how to
+connect neurons up using NetCon*/
+
+
+// ------------------------------------------------------------------------------------------------------------
+//                                       POSITIONING NEURONS IN 3-D
+// ------------------------------------------------------------------------------------------------------------
+
+/* Each time we create a new section and connect it to others, NEURON places the section in a 3-D space and
+assigns an X, Y and Z coordinate to each end of the section. When creating more than one neuron (as we have
+above), each neuron is given a different Z coordinate for all of its sections. However, NEURON does provide
+a way to reposition each section in the 3-D space, using the following functions:
+
+    - pt3dclear(), will erase any 3-D positioning information associated with the section
+    - pt3dadd(), takes four arguments (X, Y, Z, and diam) and will add a new coordinate to the section
+
+Usually there are coordinates for each end of the section which can be set by making two calls to pt3dadd();
+once for the "0" end of the section and once for the "1" end of the section.
+
+In the script below, we load dendritic 3D data from .dat files. We use this data to change the location of
+branches on a tree. Rather than a large number of dendrites, this tree to create with single reference to
+a 'Tree' structure (i.e. treeA and treeB below). */
+
+
+// ------------------------------------------------------------------------------------------------------------
+//                                                 TEMPLATES
+// ------------------------------------------------------------------------------------------------------------
+
+/* Very often, we will want to create networks of identical neurons. NEURON provides a simple way creating
+multiple copies of the same neuron using 'templates'. A template is an object definition, defining a prototype
+of an object from which we can create multiple copies*/
+
+// ---------------------------------------------
+// Defining a template
+// ---------------------------------------------
+
+/* The contents of a template is defined between two commands: 'begintemplate name', and 'endtemplate name' (where
+'name' is the name of the template we want to create). Below, we use these commands to make a template for a
+subthalamuc cell ('SThcell'): */
+
+begintemplate SThcell // Begin definition of template
+create soma, treeA[1], treeB[1] // Create soma and an array variable to store trees
+public soma, treeA, treeB  // Make these public (i.e. accessible to other sections, processes, etc.)
+objectvar f
+proc init() {local i, me, child1, child2 // Define code to run upon creation of a new object from this template
+    
+    // Create soma and define properties
+    create soma
+    soma {
+      nseg = 1
+      diam = 18.8
+      L = 18.8
+      Ra = 123.0
+      insert hh
+      gnabar_hh=0.25
+      gl_hh = .0001666
+      el_hh = -60.0
+    }
+
+    // ---------------------------------------------
+    // Create tree A
+    // ---------------------------------------------
+
+    // Load tree data (data is arranged as: branch-num child1 child2 diam L X Y Z X Y Z
+    f = new File()
+    f.ropen("./data/treeA.dat")
+    // Create tree (with number of dendrites taken from file)
+    ndendA = f.scanvar()
+    create treeA[ndendA]
+    // Loop over dendrites and connect setions
+    for i = 0,ndendA-1 {
+      me = f.scanvar() - 1 // Branch number
+      child1 = f.scanvar() - 1
+      child2 = f.scanvar() - 1 
+      treeA[me] {
+        nseg = 1
+        diam = f.scanvar()
+        L = f.scanvar()
+        Ra = 123
+        pt3dclear()
+	    pt3dadd(f.scanvar(),f.scanvar(),f.scanvar(),diam)
+	    pt3dadd(f.scanvar(),f.scanvar(),f.scanvar(),diam)
+        insert pas
+        g_pas = .0001666
+        e_pas = -60.0
+        if (child1 >= 0) {
+            printf("connecting tree A dendrite %d (0 end) to parent %d (1 end)\n",child1,me)
+            connect treeA[child1](0), 1}
+        if (child2 >= 0) {
+            printf("connecting tree A dendrite %d (0 end) to parent %d (1 end)\n",child2,me)
+            connect treeA[child2](0), 1}
+      }
+    }
+    f.close()
+
+    // ---------------------------------------------
+    // Create tree B
+    // ---------------------------------------------
+    f.ropen("./data/treeB.dat")
+    // Create tree (with number of dendrites taken from file)
+    ndendB = f.scanvar()
+    create treeB[ndendB]
+    // Loop over dendrites and connect setions
+    for i = 0,ndendB-1 {
+      me = f.scanvar() - 1 // Branch number
+      child1 = f.scanvar() - 1
+      child2 = f.scanvar() - 1 
+      treeB[me] {
+        nseg = 1
+        diam = f.scanvar()
+        L = f.scanvar()
+        Ra = 123
+        pt3dclear()
+	    pt3dadd(f.scanvar(),f.scanvar(),f.scanvar(),diam)
+	    pt3dadd(f.scanvar(),f.scanvar(),f.scanvar(),diam)
+        insert pas
+        g_pas = .0001666
+        e_pas = -60.0
+        if (child1 >= 0) {
+            printf("connecting tree A dendrite %d (0 end) to parent %d (1 end)\n",child1,me)
+            connect treeB[child1](0), 1}
+        if (child2 >= 0) {
+            printf("connecting tree A dendrite %d (0 end) to parent %d (1 end)\n",child2,me)
+            connect treeB[child2](0), 1}
+      }
+    }
+    f.close()
+
+    // Connect trees to the soma
+    connect treeA[0](0), soma(1)
+    connect treeB[0](0), soma(0)
+}
+endtemplate SThcell // Declare end of template definition
+
+
+// ---------------------------------------------
+// Creating objects from a template
+// ---------------------------------------------
+/* To create neurons from a template, we must declare the object variable that we will use to reference
+the objects. We can then create a new instance of the object from the template */
+nSThcells = 4
+objectvar SThcells[nSThcells] // define object variable to reference the objects
+for i = 0, nSThcells-1 { // create all four of our cells using the 'new' command in a for loop
+    SThcells[i] = new SThcell()
+}
+print SThcells[2].treeA[1].L // Access a specific property of a specific neuron
+
+
+// ---------------------------------------------
+// View the created neurons
+// ---------------------------------------------
+objref vg
+vg = new Shape(0) // produces a graph window object with x and y axes on the screen
+graphList[0].append(vg) // graphList[0] is for all objects that are to be updated
+vg.rotate(0,0,0,90,0,90) // (xorg, yorg, zorg, xrad, yrad, zrad)
+vg.view(-350, -600, 900, 1000, 200, 100, 800, 700) // set axes and window size
