@@ -13,3 +13,6 @@
 ## Analyses
 - <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/AllenInstitute/NeuroPixels">Allen Institute data (Neuropixels recordings and mouse atlas connectivity)</a>
 - <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/FruitFly/fruitFlyCalciumImaging">Calcium imaging data of sensory-evoked activity in Drosophila</a>
+
+
+Also, note that other examples of my work in modelling, maths, and statistics can be found <a href="https://github.com/michaelsmclayton/modellingDevelopment">here</a>.
