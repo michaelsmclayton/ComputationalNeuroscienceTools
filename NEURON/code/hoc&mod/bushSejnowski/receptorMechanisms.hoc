@@ -1,0 +1,47 @@
+// --------------------------------------------------------------
+// Define receptor mechanisms (realized with Exp2Syn)
+// --------------------------------------------------------------
+
+begintemplate AMPA
+public s
+objref s
+proc init() {
+s = new Exp2Syn(0.5)
+s.tau1=0.5
+s.tau2=5
+s.e=0
+}
+endtemplate AMPA
+
+begintemplate NMDA
+public s
+objref s
+proc init() {
+s = new Exp2Syn(0.5)
+s.tau1=1
+s.tau2=20
+s.e=0
+}
+endtemplate NMDA
+
+begintemplate GABAA
+public s
+objref s
+proc init() {
+s = new Exp2Syn(0.5)
+s.tau1=0.5
+s.tau2=5
+s.e=-80
+}
+endtemplate GABAA
+
+begintemplate GABAB
+public s
+objref s
+proc init() {
+s = new Exp2Syn(0.5)
+s.tau1=1
+s.tau2=20
+s.e=-80
+}
+endtemplate GABAB

@@ -1,0 +1,29 @@
+xopen("$(NEURONHOME)/lib/hoc/noload.hoc")
+load_file("nrngui.hoc") // load NEURON GUI
+load_file("L5Pyramidal.hoc") // load NEURON GUI
+
+// Create cell
+objectvar mycell
+mycell = new Layer5_pyr()
+
+// Add stimulator
+objectvar stim
+mycell.soma stim = new IClamp(0.5)
+stim = new IClamp(0.5)
+stim.del = 100
+stim.dur = 100
+stim.amp = 1.0
+
+// Set simulation parameters
+v_init = -65 // Set initial value of the membrane potential
+tstop = 300 // Simulation end time
+
+// Create graph object
+objref vg
+vg = new Graph(0) // produces a graph window object with x and y axes on the screen.
+graphList[0].append(vg) // graphList[0] is for all objects that are to be updated
+vg.view(0, -75, tstop, 110, 200, 200, 800, 400) // set axes and window size
+vg.addexpr("mycell.soma.v(.5)")
+
+// Run simulation
+run()
