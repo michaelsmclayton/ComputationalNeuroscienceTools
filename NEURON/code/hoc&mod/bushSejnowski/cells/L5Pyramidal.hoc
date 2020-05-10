@@ -11,11 +11,12 @@ begintemplate Layer5_pyr
 
 // Declare public variables
 public init, setTopology, createSectionLists, setLengthsDiameters, setBiophysics
-public x, y, z, updatePosition, connect2target, is_art
+public synlist, x, y, z, setPosition, connect2target
 public ampa, nmda, gabaa, gabab
 public soma, dend
 public all, somatic, dendritic, apical, basal
-// objref synlist
+public pre, ampa, gabaa, gabab, nmda
+objref synlist
 
 // Create neural sections
 create soma, dend[8]
@@ -29,9 +30,9 @@ proc init() {
   setLengthsDiameters()
   setBiophysics()
   setNofSegments()
+  synlist = new List()
   addSynapseMechanisms()
-  x = y = z = 0 // only change via updatePosition()
-  // synlist = new List()
+  x = y = z = 0 // only change via setPosition()
 }
 
 // ----------------------------------------
@@ -74,13 +75,13 @@ proc createSectionLists() { local i
   soma somatic.append()
   // Make list of dendrites
   dendritic = new SectionList()
-    for i=0, 7 dend[i] dendritic.append()
+  for i=0, 7 dend[i] dendritic.append()
   // Make list of apical dendrites
   apical = new SectionList()
-    for i=0, 4 dend[i] apical.append()
+  for i=0, 4 dend[i] apical.append()
   // Make list of basal dendrites
   basal = new SectionList()
-    for i=5, 7 dend[i] basal.append()
+  for i=5, 7 dend[i] basal.append()
 }
 
 
@@ -119,7 +120,7 @@ proc setBiophysics() {
 	forsec all{Ra=200 cm=0.85}
   // Set parameters for soma
 	forsec somatic {
-    insert hh gnabar_hh=0.16 gkbar_hh=0.01 gl_hh=0.0000426 el_hh=-65 //default -65
+      insert hh gnabar_hh=0.16 gkbar_hh=0.01 gl_hh=0.0000426 el_hh=-65 //default -65
       insert ca gbar_ca=60
       insert cad taur_cad=20
       insert kca gbar_kca=0.0002 //0.0002 //(0.00015 mho/cm2= S/cm2)
@@ -168,7 +169,7 @@ proc setNofSegments() {
 // ----------------------------------------
 
 // Update position based on function inputs
-proc updatePosition() { local i
+proc setPosition() { local i
   soma for i = 0, n3d()-1 {
     pt3dchange(i, $1-x+x3d(i), $2-y+y3d(i), $3-z+z3d(i), diam3d(i))
   }

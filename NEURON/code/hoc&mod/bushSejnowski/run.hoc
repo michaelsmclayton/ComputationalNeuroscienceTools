@@ -2,19 +2,43 @@ xopen("$(NEURONHOME)/lib/hoc/noload.hoc")
 load_file("nrngui.hoc")
 
 // Load templates
+load_file("./cells/L2Pyramidal.hoc")
 load_file("./cells/L5Pyramidal.hoc")
+load_file("./cells/inhibitory.hoc")
 
-// Create cell
-objectvar mycell
-mycell = new Layer5_pyr()
+// Create cells
+objref PL2[10], IPL2[3], PL5[10], IPL5[3]
+for i=0,9 { PL2[i] = new Layer2_pyr() PL2[i].setPosition(i*100,0,i*100) } // Create 10 Layer II/III  Pyramidal Cells
+for i=0,2 { IPL2[i] = new Inhib() }  // Create layer II/III inhibitory cells
+for i=0,9 { PL5[i] = new Layer5_pyr() PL5[i].setPosition(i*100,0,0) } // Create 10 Layer V Pyramidal Cells
+for i=0,2 { IPL5[i] = new Inhib() }  // Create layer V inhibitory cells
 
-// Add stimulator
-objectvar stim
-mycell.soma stim = new IClamp(0.5)
-stim = new IClamp(0.5)
-stim.del = 100
-stim.dur = 100
-stim.amp = 1.0
+// Define template for Exogenous feeds to network
+create acell_home_
+access acell_home_ L=1 diam=1
+begintemplate FeedX
+public pp, connect2target, x, y, z, position, is_art
+external acell_home_
+objref pp
+proc init() {
+  acell_home_ pp = new NetStimG(.5)
+  pp.MeanInterval = 10
+  pp.SD = 0.5
+  pp.MeanStart = 25
+  pp.StartSD = 1
+  pp.number = 10
+}
+func is_art() { return 1 }
+proc connect2target() { $o2 = new NetCon(pp, $o1) }
+proc position(){x=$1  y=$2  z=$3}
+endtemplate FeedX
+
+// Add stimulators
+objectvar stim2, stim5
+PL2[0].soma stim2 = new IClamp(0.5)
+{stim2.del = 100 stim2.dur = 100 stim2.amp = 1.0}
+PL5[0].soma stim5 = new IClamp(0.5)
+{stim5.del = 100 stim5.dur = 100 stim5.amp = 1.0}
 
 // Set simulation parameters
 v_init = -65 // Set initial value of the membrane potential
@@ -25,7 +49,8 @@ objref vg
 vg = new Graph(0) // produces a graph window object with x and y axes on the screen.
 graphList[0].append(vg) // graphList[0] is for all objects that are to be updated
 vg.view(0, -75, tstop, 110, 200, 200, 800, 400) // set axes and window size
-vg.addexpr("mycell.soma.v(.5)")
+vg.addexpr("PL2[0].soma.v(.5)")
+vg.addexpr("PL5[0].soma.v(.5)")
 
 // Run simulation
 run()

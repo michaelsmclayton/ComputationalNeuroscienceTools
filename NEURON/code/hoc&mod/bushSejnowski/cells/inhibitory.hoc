@@ -1,0 +1,42 @@
+// Import receptor mechanisms
+load_file("../mechanisms/receptorMechanisms.hoc")
+
+begintemplate Inhib
+
+// --------------------------------------------------------------------------------------
+//                               Template for Inhibitory cell
+// --------------------------------------------------------------------------------------
+// code adapted from https://senselab.med.yale.edu/ModelDB/ShowModel?model=113732
+
+// Declare public variables
+public cell, connect2target, init, ampa, nmda, gabaa, gabab
+external AMPA, NMDA, GABAA, GABAB
+
+// Create neural section
+create cell
+
+// ----------------------------------------
+// Constructor method
+// ----------------------------------------
+proc init(){
+  access cell L=39 diam=20 Ra=200 cm=0.85
+  insert hh
+  addSynapseMechanisms()
+}
+
+// ----------------------------------------
+// Add receptor mechanisms to neural sections
+// ----------------------------------------
+objref ampa[1],nmda[1],gabaa[1],gabab[1]
+proc addSynapseMechanisms() {
+    cell { ampa = new AMPA() nmda = new NMDA() gabaa = new GABAA() gabab = new GABAB() }
+}
+
+
+// Define method to connect section to target
+proc connect2target() { //$o1 target point process, $o2 returned NetCon
+  cell $o2 = new NetCon(&v(1), $o1)
+}
+
+// End template
+endtemplate Inhib
