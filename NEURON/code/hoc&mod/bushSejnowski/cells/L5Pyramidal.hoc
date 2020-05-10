@@ -1,5 +1,5 @@
 // Import receptor mechanisms
-load_file("receptorMechanisms.hoc")
+load_file("../mechanisms/receptorMechanisms.hoc")
 
 begintemplate Layer5_pyr
 

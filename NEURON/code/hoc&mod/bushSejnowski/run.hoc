@@ -1,6 +1,8 @@
 xopen("$(NEURONHOME)/lib/hoc/noload.hoc")
-load_file("nrngui.hoc") // load NEURON GUI
-load_file("L5Pyramidal.hoc") // load NEURON GUI
+load_file("nrngui.hoc")
+
+// Load templates
+load_file("./cells/L5Pyramidal.hoc")
 
 // Create cell
 objectvar mycell
