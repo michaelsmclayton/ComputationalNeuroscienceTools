@@ -12,6 +12,8 @@ from neuron import h #, gui
 global dt; dt = .1
 simulationLength = 105
 timepoints = int(simulationLength/dt)+1
+numberOfCells = 10
+xGap = 300 # x gap between neurons
 
 # Define template directory, and load compiled .mod files (from NEURON file)
 templateDirectory = '../../../NEURON/code/hoc&mod/bushSejnowski/'
@@ -58,15 +60,20 @@ def addPopulation(network, cellParams, N, name):
         rotation_args=dict(x=np.pi/2, y=0))
     network.create_population(name=name, POP_SIZE=N, **populationParameters)
 
-# Add populations to netowkr
-addPopulation(network, L2params, 1, 'L2pop')
-addPopulation(network, L5params, 1, 'L5pop')
+# Add populations to network
+addPopulation(network, L2params, numberOfCells, 'L2pop')
+addPopulation(network, L5params, numberOfCells, 'L5pop')
 
 # Rotate all cells
-network.populations['L2pop'].cells[0].set_rotation(**{'x': -.2*np.pi, 'y': 0})
-network.populations['L5pop'].cells[0].set_rotation(x=180,y=0,z=0)
-network.populations['L2pop'].cells[0].set_pos(x=-100,y=500)
-network.populations['L5pop'].cells[0].set_pos(x=00,y=0)
+for pop in network.populations.keys():
+    for cell in network.populations[pop].cells:
+        cell.set_rotation(x=-.2*np.pi, y=0)
+
+# Position cells
+for i, cell in enumerate(network.populations['L2pop'].cells):
+    cell.set_pos(x=(i*xGap)-100,y=500)
+for i, cell in enumerate(network.populations['L5pop'].cells):
+    cell.set_pos(x=(i*xGap),y=0)
 
 # -----------------------------------------
 # Define electrodes
@@ -76,13 +83,16 @@ network.populations['L5pop'].cells[0].set_pos(x=00,y=0)
 def makeStimulus(cell):
     return LFPy.StimIntElectrode(
     cell=cell, idx=0, pptype='IClamp',
-    amp=1,dur=100., delay=5.,
+    amp=1+(.05*np.random.randn()),dur=100., delay=5.,
     record_current=True)
-makeStimulus(network.populations['L2pop'].cells[0])
-makeStimulus(network.populations['L5pop'].cells[0])
+
+# Attack simulus electrodes (to all cells)
+for pop in network.populations.keys():
+    for cell in network.populations[pop].cells:
+        makeStimulus(cell)
 
 # Define grid recording electrode
-gridLims = {'x': [-450,300], 'y': [-350,2000]}
+gridLims = {'x': [-450,(numberOfCells+1)*280], 'y': [-400,1200]}
 X, Y = np.mgrid[gridLims['x'][0]:gridLims['x'][1]:25, gridLims['y'][0]:gridLims['y'][1]:25]
 Z = np.zeros(X.shape)
 grid_electrode = LFPy.RecExtElectrode(**{
@@ -124,26 +134,28 @@ def showNeuron(cell,ax):
 
 # Figure
 fig, axs = plt.subplots(ncols=1, nrows=5)
-fig.set_figheight(8); fig.set_figwidth(3)
+fig.set_figheight(8); fig.set_figwidth(8)
 gs = axs[0].get_gridspec()
-ax0 = fig.add_subplot(gs[1:])
+ax0 = fig.add_subplot(gs[0:])
 lfpPlot = ax0.imshow(np.rot90(LFP[:,:,0]), extent=np.r_[gridLims['x'],gridLims['y']], vmin=np.min(LFP), vmax=np.max(LFP))#, cmap='gist_gray')
-showNeuron(network.populations['L2pop'].cells[0],ax0)
+for pop in network.populations.keys():
+    for cell in network.populations[pop].cells:
+        showNeuron(cell,ax0)
 showNeuron(network.populations['L5pop'].cells[0],ax0)
-ax1 = fig.add_subplot(gs[0])
-ax1.plot(network.populations['L5pop'].cells[0].vmem.T, color='r', alpha=.1)
-ax1.plot(network.populations['L2pop'].cells[0].vmem.T, color='b', alpha=.1)
-line, = ax1.plot([0,0],[-80,50], color='k')
+#ax1 = fig.add_subplot(gs[0])
+#ax1.plot(network.populations['L5pop'].cells[0].vmem.T, color='r', alpha=.1)
+#ax1.plot(network.populations['L2pop'].cells[0].vmem.T, color='b', alpha=.1)
+# line, = ax1.plot([0,0],[-80,50], color='k')
 for ax in axs: ax.axis('off')
-ax1.axis('off')
+# ax1.axis('off')
 ax0.axis('off'); 
 
 # Define animation function
 def updatefig(t):
     # print(L5Cell.tvec[t])
     lfpPlot.set_data(np.rot90(LFP[:,:,int(t)]))
-    line.set_xdata([t,t])
-    return lfpPlot,line
+    # line.set_xdata([t,t])
+    return lfpPlot,#line
 
 # Animate
 ani = FuncAnimation(fig, updatefig, frames=range(LFP.shape[2]), interval=2)
