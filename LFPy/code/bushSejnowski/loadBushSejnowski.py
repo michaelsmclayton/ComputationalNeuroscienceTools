@@ -12,7 +12,7 @@ from neuron import h #, gui
 global dt; dt = .1
 simulationLength = 105
 timepoints = int(simulationLength/dt)+1
-numberOfCells = 10
+numberOfCells = 9
 xGap = 300 # x gap between neurons
 
 # Define template directory, and load compiled .mod files (from NEURON file)
@@ -75,6 +75,16 @@ for i, cell in enumerate(network.populations['L2pop'].cells):
 for i, cell in enumerate(network.populations['L5pop'].cells):
     cell.set_pos(x=(i*xGap),y=0)
 
+# -------------------------------------
+# Add connectivity
+# -------------------------------------
+connectivity = np.zeros(shape=(numberOfCells,numberOfCells),dtype=np.bool) # Boolean matrix of False values
+connections = [[4,3],[4,4],[4,5]]
+for pre,post in connections:
+    connectivity[pre,post] = True
+network.connect(pre='L5pop', post='L2pop', connectivity=connectivity, syn_pos_args=dict(section=['soma']))
+
+
 # -----------------------------------------
 # Define electrodes
 # -----------------------------------------
@@ -86,10 +96,11 @@ def makeStimulus(cell):
     amp=1+(.05*np.random.randn()),dur=100., delay=5.,
     record_current=True)
 
-# Attack simulus electrodes (to all cells)
-for pop in network.populations.keys():
-    for cell in network.populations[pop].cells:
-        makeStimulus(cell)
+# # Attach simulus electrodes (to all cells)
+# for pop in ['L5pop']: # network.populations.keys():
+#     for cell in network.populations[pop].cells:
+#         makeStimulus(cell)
+makeStimulus(network.populations['L5pop'].cells[4])
 
 # Define grid recording electrode
 gridLims = {'x': [-450,(numberOfCells+1)*280], 'y': [-400,1200]}
