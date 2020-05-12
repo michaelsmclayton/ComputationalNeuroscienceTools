@@ -13,7 +13,7 @@ global dt; dt = .1
 simulationLength = 105
 timepoints = int(simulationLength/dt)+1
 numberOfCells = 9
-xGap = 300 # x gap between neurons
+xGap = 500 # x gap between neurons
 
 # Define template directory, and load compiled .mod files (from NEURON file)
 templateDirectory = '../../../NEURON/code/hoc&mod/bushSejnowski/'
@@ -57,7 +57,7 @@ def addPopulation(network, cellParams, N, name):
         Cell=LFPy.NetworkCell,
         cell_args=cellParams,
         pop_args=dict(radius=1.,loc=0.,scale=0),
-        rotation_args=dict(x=np.pi/2, y=0))
+        rotation_args=dict(x=0, y=0))
     network.create_population(name=name, POP_SIZE=N, **populationParameters)
 
 # Add populations to network
@@ -66,8 +66,10 @@ addPopulation(network, L5params, numberOfCells, 'L5pop')
 
 # Rotate all cells
 for pop in network.populations.keys():
-    for cell in network.populations[pop].cells:
-        cell.set_rotation(x=-.2*np.pi, y=0)
+    rotations = network.populations[pop].rotations
+    for i, cell in enumerate(network.populations[pop].cells):
+        currentZRot = rotations[i]
+        cell.set_rotation(x=2*np.pi, z=-currentZRot)
 
 # Position cells
 for i, cell in enumerate(network.populations['L2pop'].cells):
@@ -75,11 +77,12 @@ for i, cell in enumerate(network.populations['L2pop'].cells):
 for i, cell in enumerate(network.populations['L5pop'].cells):
     cell.set_pos(x=(i*xGap),y=0)
 
+
 # -------------------------------------
 # Add connectivity
 # -------------------------------------
 connectivity = np.zeros(shape=(numberOfCells,numberOfCells),dtype=np.bool) # Boolean matrix of False values
-connections = [[4,3],[4,4],[4,5]]
+connections = [[4,3],[4,4],[4,5],[4,6]]
 for pre,post in connections:
     connectivity[pre,post] = True
 network.connect(pre='L5pop', post='L2pop', connectivity=connectivity, syn_pos_args=dict(section=['soma']))
@@ -103,7 +106,7 @@ def makeStimulus(cell):
 makeStimulus(network.populations['L5pop'].cells[4])
 
 # Define grid recording electrode
-gridLims = {'x': [-450,(numberOfCells+1)*280], 'y': [-400,1200]}
+gridLims = {'x': [-550,(numberOfCells+1)*450], 'y': [-600,2200]}
 X, Y = np.mgrid[gridLims['x'][0]:gridLims['x'][1]:25, gridLims['y'][0]:gridLims['y'][1]:25]
 Z = np.zeros(X.shape)
 grid_electrode = LFPy.RecExtElectrode(**{
