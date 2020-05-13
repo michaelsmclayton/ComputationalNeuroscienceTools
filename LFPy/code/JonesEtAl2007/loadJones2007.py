@@ -5,19 +5,20 @@ import LFPy
 import matplotlib.pyplot as plt
 import pprint; pp = pprint.PrettyPrinter(depth=6).pprint
 from matplotlib.animation import FuncAnimation
-from neuron import h #, gui
+from neuron import h
+from helperFunctions import getData, makeInhibitoryCellTemplate
+h("forall delete_section()")
 
 # Simulation parameters
 global dt; dt = .1
 simulationLength = 105
 timepoints = int(simulationLength/dt)+1
-numberOfCells = 9
+numberOfCells = 10
 xGap = 100 # x gap between neurons
 
 # Download data (if not present)
 if not(os.path.isdir('./SS-cortex/')):
-    os.system("python3 getData.py")
-
+    getData()
 
 # Define template directory, and load compiled .mod files (from NEURON file)
 templateDirectory = './SS-cortex/'
@@ -32,7 +33,11 @@ h.nrn_load_dll(templateDirectory + 'x86_64/.libs/libnrnmech.so') # Load compiled
 # Get cells (LFPy.NetworkCell)
 # --------------------------------------
 
-# Define cells
+# --------------------------
+# Define excitatory cells
+# --------------------------
+
+# Function to get general parameters
 def getCellParams(name):
     return dict(
         morphology='empty.hoc', # Note: it seems quite strange and unsatisfying that this works
@@ -41,12 +46,29 @@ def getCellParams(name):
         templateargs=None, v_init=-75,
         delete_sections = False, # important so that all sections are kept when creating different populations
         dt = dt,
-        # pt3d=True,
         # nsegs_method='fixed_length', # To determine segment length
         # max_nsegs_length= np.inf
     )
-L2params = getCellParams(name='Layer2_pyr')
-L5params = getCellParams(name='Layer5_pyr')
+
+# Get excitatory cell parameters
+Layer2_pyr_params = getCellParams(name='Layer2_pyr')
+Layer5_pyr_params = getCellParams(name='Layer5_pyr')
+
+
+# --------------------------
+# Define inhibitory cells
+# --------------------------
+
+# Create inhibitory template file if none exists
+inhibTempName = 'Inhib.hoc'
+if not(os.path.isfile(inhibTempName)):
+    makeInhibitoryCellTemplate(inhibTempName, templateDirectory)
+
+# Define inhibitory cell parameters
+inhibitory_params = getCellParams(name='inhib')
+inhibitory_params['templatefile'] = inhibTempName
+inhibitory_params['Ra'] = 200
+inhibitory_params['cm'] = .85
 
 
 # --------------------------------------
@@ -54,7 +76,7 @@ L5params = getCellParams(name='Layer5_pyr')
 # --------------------------------------
 
 # Create network
-network = LFPy.Network(tstop=simulationLength)
+network = LFPy.Network(tstop=simulationLength,OUTPUTPATH='./')
 
 # Define populations
 def addPopulation(network, cellParams, N, name):
@@ -65,9 +87,16 @@ def addPopulation(network, cellParams, N, name):
         rotation_args=dict(x=0, y=0))
     network.create_population(name=name, POP_SIZE=N, **populationParameters)
 
+# Add dummy cell (to load sections from sj3-cortex.hoc, and then delete all sections)
+dummy = LFPy.TemplateCell(**Layer2_pyr_params)
+h('forall delete_section()')
+
 # Add populations to network
-addPopulation(network, L2params, numberOfCells, 'L2pop')
-addPopulation(network, L5params, numberOfCells, 'L5pop')
+addPopulation(network, Layer2_pyr_params, numberOfCells, 'Layer2_pyr_pop')
+addPopulation(network, Layer5_pyr_params, numberOfCells, 'Layer5_pyr_pop')
+addPopulation(network, inhibitory_params, 3, 'Layer2_inh_pop')
+addPopulation(network, inhibitory_params, 3, 'Layer5_inh_pop')
+# h("for i=0,2 { IPL5[i] = new Inhib() }") 
 
 # Rotate all cells
 for pop in network.populations.keys():
@@ -77,10 +106,15 @@ for pop in network.populations.keys():
         cell.set_rotation(x=2*np.pi, z=-currentZRot)
 
 # Position cells
-for i, cell in enumerate(network.populations['L2pop'].cells):
+for i, cell in enumerate(network.populations['Layer2_pyr_pop'].cells):
     cell.set_pos(x=(i*xGap)-100,y=500)
-for i, cell in enumerate(network.populations['L5pop'].cells):
+for i, cell in enumerate(network.populations['Layer5_pyr_pop'].cells):
     cell.set_pos(x=(i*xGap),y=0)
+for i, cell in enumerate(network.populations['Layer2_inh_pop'].cells):
+    cell.set_pos(x=(i*xGap)+50,y=700)
+for i, cell in enumerate(network.populations['Layer5_inh_pop'].cells):
+    cell.set_pos(x=(i*xGap)+50,y=200)
+
 
 # -------------------------------------
 # Add connectivity
@@ -99,7 +133,7 @@ for pre,post in connections:
     connectivity[pre,post] = True
 
 # Connect!
-network.connect(pre='L5pop', post='L2pop', connectivity=connectivity, syn_pos_args=dict(section=['dend[3]']), \
+network.connect(pre='Layer5_pyr_pop', post='Layer2_pyr_pop', connectivity=connectivity, syn_pos_args=dict(section=['dend[3]']), \
     delayfun=progressiveDelay)
 
 
@@ -115,10 +149,10 @@ def makeStimulus(cell):
     record_current=True)
 
 # # Attach simulus electrodes (to all cells)
-# for pop in ['L5pop']: # network.populations.keys():
+# for pop in ['Layer5_pyr_pop']: # network.populations.keys():
 #     for cell in network.populations[pop].cells:
 #         makeStimulus(cell)
-makeStimulus(network.populations['L5pop'].cells[4])
+makeStimulus(network.populations['Layer5_pyr_pop'].cells[4])
 
 # Define grid recording electrode
 gridLims = {'x': [-500,(numberOfCells*xGap)+300], 'y': [-600,2200]}
@@ -149,6 +183,7 @@ for pop in network.populations.keys():
             dummyCellParams[dataType] = np.hstack((dummyCellParams[dataType], getattr(cell,dataType)))
 fullNetwork = LFPy.network.DummyCell(**dummyCellParams)
 fullNetwork.verbose = False
+# _, fullNetwork = network._create_network_dummycell() # Note that this does not seem to work
 
 # Get LFP (reshaping into matrix: x,y,time)
 grid_electrode.calc_lfp(cell=fullNetwork)
@@ -170,10 +205,10 @@ lfpPlot = ax0.imshow(np.rot90(LFP[:,:,0]), extent=np.r_[gridLims['x'],gridLims['
 for pop in network.populations.keys():
     for cell in network.populations[pop].cells:
         showNeuron(cell,ax0)
-showNeuron(network.populations['L5pop'].cells[0],ax0)
+showNeuron(network.populations['Layer5_pyr_pop'].cells[0],ax0)
 #ax1 = fig.add_subplot(gs[0])
-#ax1.plot(network.populations['L5pop'].cells[0].vmem.T, color='r', alpha=.1)
-#ax1.plot(network.populations['L2pop'].cells[0].vmem.T, color='b', alpha=.1)
+#ax1.plot(network.populations['Layer5_pyr_pop'].cells[0].vmem.T, color='r', alpha=.1)
+#ax1.plot(network.populations['Layer2_pyr_pop'].cells[0].vmem.T, color='b', alpha=.1)
 # line, = ax1.plot([0,0],[-80,50], color='k')
 for ax in axs: ax.axis('off')
 # ax1.axis('off')
@@ -181,7 +216,6 @@ ax0.axis('off');
 
 # Define animation function
 def updatefig(t):
-    # print(L5Cell.tvec[t])
     lfpPlot.set_data(np.rot90(LFP[:,:,int(t)]))
     # line.set_xdata([t,t])
     return lfpPlot,#line
