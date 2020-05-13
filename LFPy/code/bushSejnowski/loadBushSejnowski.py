@@ -1,5 +1,4 @@
-
-
+import os
 import numpy as np
 import neuron
 import LFPy
@@ -15,9 +14,15 @@ timepoints = int(simulationLength/dt)+1
 numberOfCells = 9
 xGap = 100 # x gap between neurons
 
+# Download data (if not present)
+if not(os.path.isdir('./SS-cortex/')):
+    os.system("python3 getData.py")
+
+
 # Define template directory, and load compiled .mod files (from NEURON file)
-templateDirectory = '../../../NEURON/code/hoc&mod/bushSejnowski/'
-h.nrn_load_dll(templateDirectory + '/x86_64/.libs/libnrnmech.so') # Load compiled .mod files
+templateDirectory = './SS-cortex/'
+h.nrn_load_dll(templateDirectory + 'x86_64/.libs/libnrnmech.so') # Load compiled .mod files
+
 
 # ------------------------------------------------------------------------------------------------
 #                       Define neural network (creating cells from .hoc templates)
@@ -28,10 +33,10 @@ h.nrn_load_dll(templateDirectory + '/x86_64/.libs/libnrnmech.so') # Load compile
 # --------------------------------------
 
 # Define cells
-def getCellParams(file,name):
+def getCellParams(name):
     return dict(
         morphology='empty.hoc', # Note: it seems quite strange and unsatisfying that this works
-        templatefile='%scells/%s.hoc' % (templateDirectory, file),
+        templatefile='%s/sj3-cortex.hoc' % (templateDirectory),
         templatename = name,
         templateargs=None, v_init=-75,
         delete_sections = False, # important so that all sections are kept when creating different populations
@@ -40,8 +45,8 @@ def getCellParams(file,name):
         # nsegs_method='fixed_length', # To determine segment length
         # max_nsegs_length= np.inf
     )
-L2params = getCellParams(file='L2Pyramidal',name='Layer2_pyr')
-L5params = getCellParams(file='L5Pyramidal',name='Layer5_pyr')
+L2params = getCellParams(name='Layer2_pyr')
+L5params = getCellParams(name='Layer5_pyr')
 
 
 # --------------------------------------
@@ -94,7 +99,7 @@ for pre,post in connections:
     connectivity[pre,post] = True
 
 # Connect!
-network.connect(pre='L5pop', post='L2pop', connectivity=connectivity, syn_pos_args=dict(section=['soma']), \
+network.connect(pre='L5pop', post='L2pop', connectivity=connectivity, syn_pos_args=dict(section=['dend[3]']), \
     delayfun=progressiveDelay)
 
 
@@ -154,14 +159,14 @@ LFP = np.reshape(LFP,(x,y,time))
 # Define plotting functions
 def showNeuron(cell,ax):
     for xStart,xEnd,yStart,yEnd,diam in zip(cell.xstart,cell.xend,cell.ystart,cell.yend,cell.diam):
-        ax.plot([xStart,xEnd], [yStart,yEnd], linewidth=diam/8, color='k', alpha=.8)
+        ax.plot([xStart,xEnd], [yStart,yEnd], linewidth=diam/4, color='k', alpha=.8)
 
 # Figure
 fig, axs = plt.subplots(ncols=1, nrows=5)
 fig.set_figheight(8); fig.set_figwidth(8)
 gs = axs[0].get_gridspec()
 ax0 = fig.add_subplot(gs[0:])
-lfpPlot = ax0.imshow(np.rot90(LFP[:,:,0]), extent=np.r_[gridLims['x'],gridLims['y']], vmin=np.min(LFP), vmax=np.max(LFP))#, cmap='gist_gray')
+lfpPlot = ax0.imshow(np.rot90(LFP[:,:,0]), extent=np.r_[gridLims['x'],gridLims['y']], vmin=np.min(LFP), vmax=np.max(LFP), cmap='gist_gray')
 for pop in network.populations.keys():
     for cell in network.populations[pop].cells:
         showNeuron(cell,ax0)
