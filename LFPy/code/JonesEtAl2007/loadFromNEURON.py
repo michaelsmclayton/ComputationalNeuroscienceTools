@@ -25,8 +25,17 @@ h("load_file(\"./SS-cortex/wiring_proc.hoc\")")
 # # Load specific instantiation
 # h('suprathresh()')
 
-# # Run model!
-# h('run()')
+# Turn on calculation of i_membrane (i.e. transmembrane currents)
+cv = h.CVode()
+cv.use_fast_imem(True)
+
+# Set segments to record
+segToRecord = h.PL2[0].soma(0)
+imem = h.Vector().record(segToRecord._ref_i_membrane_) # also "_ref_v"
+t = h.Vector().record(h._ref_t) # Time stamp vector
+
+# Run model!
+h('run()')
 
 
 # ----------------------------------------------------
@@ -61,4 +70,8 @@ ax = fig.add_subplot(111, projection='3d')
 for i in range(len(xyz_starts)):
     ax.plot([xyz_starts[i,2],xyz_ends[i,2]], [xyz_starts[i,0],xyz_ends[i,0]], [xyz_starts[i,1],xyz_ends[i,1]], color='k')
 ax.view_init(1, 0)
+plt.show()
+
+# Plot imem results
+plt.plot(t,imem)
 plt.show()
