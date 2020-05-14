@@ -3,9 +3,9 @@ import numpy as np
 import neuron
 import LFPy
 import matplotlib.pyplot as plt
-import pprint; pp = pprint.PrettyPrinter(depth=6).pprint
+import pprint; pp = pprint.PrettyPrinter(depth=10).pprint
 from matplotlib.animation import FuncAnimation
-from neuron import h
+from neuron import h, gui
 from helperFunctions import getData, makeInhibitoryCellTemplate
 h("forall delete_section()")
 
@@ -120,21 +120,64 @@ for i, cell in enumerate(network.populations['Layer5_inh_pop'].cells):
 # Add connectivity
 # -------------------------------------
 
-# Define function which returns delays of increasing duration for each synapse
-iterator = 0
-def progressiveDelay(**kwargs):
-    global iterator; iterator += 1
-    return np.ndarray(1, dtype=float) + (iterator*.25)
+# Define local network synaptic connection parameters (from Table 2 of original paper)
+localNetworkParameters = {
+    'L2/3e to L5e': {
+        'pre': 'Layer2_pyr_pop',
+        'post': 'Layer5_pyr_pop',
+        'params': {
+            'max_conductance': .00025,
+            'weight_space': 3, 'min_delay': 3, 'delay_space': 3}},
+    # 'L2/3e to L2/3e': {
+    #     'pre': 'Layer2_pyr_pop',
+    #     'post': 'Layer2_pyr_pop',
+    #     'params': {
+    #         'max_conductance': {'AMPA': .001,'NMDA': .0005},
+    #         'weight_space': 3, 'min_delay': 1, 'delay_space': 3}},
+}
 
-# Define connectivity matrix (Boolean matrix)
-connectivity = np.zeros(shape=(numberOfCells,numberOfCells),dtype=np.bool) # Boolean matrix of False values
-connections = [[4,i] for i in range(numberOfCells)]
-for pre,post in connections:
-    connectivity[pre,post] = True
+# Define function to return weights and delays (Gaussian based on synaptic distance)
+def getWeightsAndDelays(npre, npost, max_conductance, weight_space, min_delay, delay_space):
+    weights, delays = np.zeros(shape=(npre,npost)), np.zeros(shape=(npre,npost))
+    for i in range(npre):
+        for j in range(npost):
+            if i==j: weights[i,j], delays[i,j] = max_conductance, min_delay
+            else:
+                weights[i,j] = max_conductance * np.exp(-(np.abs(i-j))**2 / (weight_space**2))
+                delays[i,j] = min_delay * 1/(np.exp(-(np.abs(i-j))**2 / (delay_space**2)))
+    return weights, delays
 
-# Connect!
-network.connect(pre='Layer5_pyr_pop', post='Layer2_pyr_pop', connectivity=connectivity, syn_pos_args=dict(section=['dend[3]']), \
-    delayfun=progressiveDelay)
+# Define delay and weight functions
+def makeIteratorFunction(iteratorType,values,scalar):
+    def function(**kwargs):
+        global iterators
+        value = values[iterators[iteratorType]]
+        iterators[iteratorType] += 1
+        return np.ndarray(1, dtype=float) + (value*scalar)
+    return function
+
+# Loop over all synapse types
+for synapseType in localNetworkParameters.keys():
+    currentType = localNetworkParameters[synapseType]
+    # Get pre and post population information
+    prePop, postPop = currentType['pre'], currentType['post']
+    npre = len(network.populations[prePop].cells)
+    npost = len(network.populations[postPop].cells)
+    # Get connections, weights, and delays
+    connectivity = np.ones(shape=(npre,npost),dtype=np.bool) # Boolean matrix of True values
+    weights, delays = getWeightsAndDelays(npre, npost, **currentType['params'])
+    connections = np.array([[[i,j] for j in range(npost)] for i in range(npre)]) # Define connections
+    # Reshape to 1-D arrays
+    connections = np.reshape(connections, (connections.shape[0]*connections.shape[1],connections.shape[2]))
+    weights = np.reshape(weights, (weights.shape[0]*weights.shape[1]))
+    delays = np.reshape(delays, (delays.shape[0]*delays.shape[1]))
+    # Create delay and weight producing functions
+    iterators = {'delay': 0, 'weight': 0}
+    delayFun = makeIteratorFunction('delay', delays, scalar=.5)
+    weightFun = makeIteratorFunction('weight', weights, scalar=150)
+    # Connect!
+    network.connect(pre=prePop, post=postPop, connectivity=connectivity, syn_pos_args=dict(section=['soma']), \
+        delayfun=delayFun, weightfun=weightFun)
 
 
 # -----------------------------------------
@@ -149,10 +192,10 @@ def makeStimulus(cell):
     record_current=True)
 
 # # Attach simulus electrodes (to all cells)
-# for pop in ['Layer5_pyr_pop']: # network.populations.keys():
+# for pop in ['Layer5_inh_pop']: # network.populations.keys():
 #     for cell in network.populations[pop].cells:
 #         makeStimulus(cell)
-makeStimulus(network.populations['Layer5_pyr_pop'].cells[4])
+makeStimulus(network.populations['Layer2_pyr_pop'].cells[4])
 
 # Define grid recording electrode
 gridLims = {'x': [-500,(numberOfCells*xGap)+300], 'y': [-600,2200]}
@@ -194,7 +237,7 @@ LFP = np.reshape(LFP,(x,y,time))
 # Define plotting functions
 def showNeuron(cell,ax):
     for xStart,xEnd,yStart,yEnd,diam in zip(cell.xstart,cell.xend,cell.ystart,cell.yend,cell.diam):
-        ax.plot([xStart,xEnd], [yStart,yEnd], linewidth=diam/4, color='k', alpha=.8)
+        ax.plot([xStart,xEnd], [yStart,yEnd], linewidth=diam/16, color='k', alpha=.8)
 
 # Figure
 fig, axs = plt.subplots(ncols=1, nrows=5)
@@ -223,3 +266,39 @@ def updatefig(t):
 # Animate
 ani = FuncAnimation(fig, updatefig, frames=range(LFP.shape[2]), interval=2)
 plt.show()
+
+
+
+
+
+
+
+
+# a = network.populations['Layer5_inh_pop'].cells[0].vmem
+# plt.plot(a.T); plt.show()
+
+
+# # Load original model
+# h("load_file(\"./SS-cortex/sj3-cortex.hoc\")")
+# h("load_file(\"./SS-cortex/wiring_proc.hoc\")")
+# h("load_file(\"./SS-cortex/wiring-config_suprathresh.hoc\")")
+
+# AMPAconnects = h.AMPAconnects
+# NMDAconnects = h.NMDAconnects
+# GABAAconnects = h.GABAAconnects
+# GABABconnects = h.GABABconnects
+
+# for connect in [AMPAconnects,NMDAconnects,GABAAconnects,GABABconnects]:
+#     for i, syn in enumerate(connect):
+#         # print(np.round(i/len(connect),2), syn.preseg(), syn.postseg(), syn.delay, syn.weight[0])
+#         print(np.round(i/len(connect),2), syn.preseg(), syn.postseg(), syn.delay, syn.weight[0])
+
+
+# $1 = max_weight
+# $2 = space_constant
+# $3 = compartment
+# $4 = receptor_type
+# $5 = minimum_delay
+# $6 = delay_space_constant
+# {weight = max_weight * exp( -(abs(i - j))^2 / ( space_constant^2) )}
+# if (i==j) {delay = minimum_delay}else {delay = minimum_delay * 1 / (exp( -(abs(i - j))^2 / ( delay_space_constant^2) ) )}
