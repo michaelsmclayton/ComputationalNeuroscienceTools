@@ -14,6 +14,10 @@ h("forall delete_section()")
 # Load model
 # ----------------------------------------------------
 
+# Download data (if not present)
+if not(os.path.isdir('./SS-cortex/')):
+    getData()
+
 # Define template directory, and load compiled .mod files (from NEURON file)
 templateDirectory = './SS-cortex/'
 h.nrn_load_dll(templateDirectory + 'x86_64/.libs/libnrnmech.so') # Load compiled .mod files
