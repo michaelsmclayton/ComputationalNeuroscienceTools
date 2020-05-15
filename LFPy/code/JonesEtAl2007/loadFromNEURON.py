@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.animation import FuncAnimation
 import pprint; pp = pprint.PrettyPrinter(depth=10).pprint
-from neuron import h#, gui
+from neuron import h, gui
 from helperFunctions import getData
 h("forall delete_section()")
 
@@ -140,10 +140,11 @@ gs = axs[0].get_gridspec()
 # Plot dipoles
 ax0 = fig.add_subplot(gs[0])
 l2dipole_mean, l5dipole_mean = np.mean(dipoleL2,axis=0), np.mean(dipoleL5,axis=0)
-ax0.plot(l2dipole_mean, label="L2 dipole")
-ax0.plot(l5dipole_mean, label="L5 dipole")
-ax0.plot(l2dipole_mean+l5dipole_mean, '--', color='k', alpha=.5, label="Combined dipole")
+ax0.plot(times, l2dipole_mean, label="L2 dipole")
+ax0.plot(times, l5dipole_mean, label="L5 dipole")
+ax0.plot(times, l2dipole_mean+l5dipole_mean, '--', color='k', alpha=.5, label="Combined dipole")
 ax0.legend(frameon=False, loc='lower left')
+plt.box(False)
 line, = ax0.plot([0,0],[-200,200], color='k')
 
 # Show LFP animation
@@ -154,13 +155,14 @@ def showNeurons(ax):
 lfpPlot = ax1.imshow(np.rot90(LFP[:,:,0]), extent=np.r_[gridLims['x'],gridLims['y']], vmin=np.min(LFP), vmax=np.max(LFP))#, cmap='gist_gray')
 showNeurons(ax1)
 for ax in axs: ax.axis('off')
-ax0.axis('off'); ax1.axis('off')
+# ax0.axis('off')
+ax1.axis('off')
 
 # Define animation function
 def updatefig(t):
-    print(np.round(times[t],0),h.tstop)
+    # print(np.round(times[t],0),h.tstop)
     lfpPlot.set_data(np.rot90(LFP[:,:,int(t)]))
-    line.set_xdata([t,t])
+    line.set_xdata([times[t],times[t]])
     return lfpPlot, line
 
 # Animate
