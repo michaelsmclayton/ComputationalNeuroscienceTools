@@ -4,7 +4,7 @@ Data taken from the Visual Coding - Neuropixels <a href="https://portal.brain-ma
 
 ## Visualising data from a single Neuropixels probe
 
-<a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/blob/master/AllenInstitute/NeuroPixels/neuropixels.py">neuropixels.py</a>
+<a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/blob/master/AllenInstitute/NeuroPixels/neuropixelsLFP.py">neuropixelsLFP.py</a>
 
 <img src="./imgs/neuroPixelsProbeActivity.gif"/>
 
