@@ -5,6 +5,7 @@
 import os
 import numpy as np
 import pandas as pd
+import pprint; pp = pprint.PrettyPrinter(depth=10).pprint
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
@@ -56,6 +57,8 @@ if analyseLFP==True:
     lfp = session.get_lfp(probe_id)
     # print(lfp)
 
+    aksjd
+
     # We can figure out where each LFP channel is located in the Brain
     # now use a utility to associate intervals of /rows with structures
     structure_acronyms, intervals = session.channel_structure_intervals(lfp["channel"])
@@ -85,7 +88,7 @@ if analyseLFP==True:
         # print(flash/len(starts))
         window = np.where(np.logical_and(lfp["time"] < ends[flash], lfp["time"] >= starts[flash]))[0]
         currentLFP = lfp[{"time": window}].T
-        evokedLFP[flash,:,:] = currentLFP[:,0:312]
+        evokedLFP[flash,:,:] = currentLFP[0:77,0:312]
 
     # Plot average evoked LFP
     fig, ax = plt.subplots()
@@ -173,9 +176,9 @@ def updatefig(t):
     return scat1, scat2, title
 
 # Plot single probe
-fig, axes = plt.subplots(1,2,sharex=True)
-fig.set_size_inches(10, 5)
-title = fig.suptitle('', y=.85, fontsize=12)
+fig, axes = plt.subplots(2,1)
+fig.set_size_inches(6,10)
+title = fig.suptitle('', y=.9, fontsize=12)
 # Create coronal plot
 halfwayIndex = int(len(ant_post_lfp)/2)
 anteriorPosteriorSlice = int(ant_post_lfp[halfwayIndex]/25)
@@ -184,12 +187,16 @@ dataToPlot = img[:,:,anteriorPosteriorSlice].T
 axes[0].imshow(dataToPlot, cmap='gray', extent=[0, dataToPlot.shape[1]*25, dataToPlot.shape[0]*25, 0])
 scat1 = axes[0].scatter(left_right_lfp, dors_vent_lfp, s=4, c=lfp[0,:].values)
 axes[0].set_xlim([0, dataToPlot.shape[1]*25])
+axes[0].set_xlabel('Left-Right')
+axes[0].set_ylabel('Dorsal-Ventral')
 # Create saggital plot
 leftRightSlice = int(left_right_lfp[halfwayIndex]/25)
 dataToPlot = img[leftRightSlice,:,:]
 axes[1].imshow(dataToPlot, cmap='gray', extent=[0, dataToPlot.shape[1]*25, dataToPlot.shape[0]*25, 0])
 scat2 = axes[1].scatter(ant_post_lfp, dors_vent_lfp, s=4, c=lfp[0,:].values)
-ani = FuncAnimation(fig, updatefig, frames=range(1, lfp.shape[0], 10), interval=1)
+axes[1].set_xlabel('Anterior-Posterior')
+axes[1].set_ylabel('Dorsal-Ventral')
+ani = FuncAnimation(fig, updatefig, frames=range(1, lfp.shape[0], 20), interval=1)
 plt.show()
 
 
@@ -243,3 +250,10 @@ plt.show()
 # ax.set_ylabel('left_right')
 # ax.set_zlabel('dors_vent')
 # plt.show()
+
+
+
+unitLocations = np.array([session.units.probe_horizontal_position, session.units.probe_vertical_position])
+
+plt.plot(unitLocations[0,:],unitLocations[1,:])
+plt.show()
