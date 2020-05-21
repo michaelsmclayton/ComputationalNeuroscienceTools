@@ -200,7 +200,7 @@ sim.run()
 # plot_report(config_file='sim_ch03/simulation_config.json', report_name='v', report_file='%s/output/v_report.h5' % (savedir))
 
 # # Plot raster (also not working)
-plot_raster(config_file='sim_ch03/simulation_config.json')
+# plot_raster(config_file='sim_ch03/simulation_config.json')
 # plt.savefig('%s/rasterResults' % (savedir))
 
 # Get data
@@ -231,17 +231,15 @@ plt.savefig('%s/simulationResults' % (savedir))
 # ----------------------------------------------------
 
 # # Get segment locations
+# cell = h.Biophys1[0]
 # getXYZ = lambda sec,loc : [sec.x3d(loc), sec.y3d(loc), sec.z3d(loc)]
 # xyz_starts, xyz_ends = np.zeros(shape=(0,3)), np.zeros(shape=(0,3))
-# for sec in h.allsec():
+# for sec in cell.apical: #cell.allsec():
 #     start,end = [getXYZ(sec,0), getXYZ(sec,1)]
 #     xyz_starts = np.vstack((xyz_starts, start))
 #     xyz_ends = np.vstack((xyz_ends, end))
 
 # # Plot segments
 # plt.figure()
-# # nsegs = 1000
-# # xyz_starts = xyz_starts[0:nsegs,:]; xyz_ends = xyz_ends[0:nsegs,:]
-# for starts, ends in zip(xyz_starts, xyz_ends):
-#     plt.plot([starts[0],ends[0]], [starts[1],ends[1]], linewidth=1, color='k', alpha=.5)
+# [plt.plot([starts[1],ends[1]], [starts[2],ends[2]], linewidth=1, color='k', alpha=.5) for starts, ends in zip(xyz_starts, xyz_ends)]
 # plt.savefig('network')
