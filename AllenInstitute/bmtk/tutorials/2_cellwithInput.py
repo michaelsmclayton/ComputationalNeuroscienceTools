@@ -12,7 +12,7 @@ import matplotlib.pylab as plt
 '''NOTE: Run in Docker container to ensure that this scripts runs properly'''
 
 # General parameters
-savedir = 'sim_ch02'
+savedir = 'sim_ch03'
 
 # ----------------------------------------------------
 # 1. Build the network
@@ -27,6 +27,12 @@ savedir = 'sim_ch02'
 name or our choosing. As we will use cell models from mouse cortex in this tutorial, we'll call our network 'mcortex'''
 cortex = NetworkBuilder('mcortex')
 
+# Define custom function for cell positions
+'''Customs functions like this must return a list of size N'''
+# def cortex_positions(N):
+#     # codex to create a list/numpy array of N (x, y, z) positions.
+#     return np.random.rand(N,3)
+
 # Create network of cells
 '''Once we have a network, we can add nodes (i.e. cells) by calling the add_nodes() method. Here, we have 100 cell. all of
 which are of the same type, but with different locations and y-axis rotations. The positions of each cell is defined by the
@@ -35,10 +41,11 @@ a built-in function that randomly assigns each cell a given y angle.'''
 N = 10
 cortex.add_nodes(
     N=N, # number of cells
-    pop_name='Scnn1a',
-    positions=positions_columinar(N=N, center=[0, 50.0, 0], max_radius=30.0, height=100.0), # position cells within column
-    rotation_angle_yaxis=xiter_random(N=N, min_x=0.0, max_x=2*np.pi),
-    rotation_angle_zaxis=3.646878266, # note here that z rotations are all the same, but they could be different by using the function above
+    pop_name = 'Scnn1a',
+    positions = positions_columinar(N=N, center=[0, 50.0, 0], max_radius=30.0, height=100.0), # position cells within column
+    # positions = cortex_positions(N) # custom positions function
+    rotation_angle_yaxis = xiter_random(N=N, min_x=0.0, max_x=2*np.pi),
+    rotation_angle_zaxis = 3.646878266, # note here that z rotations are all the same, but they could be different by using the function above
     potental = 'exc', # indicate that it is an excitatory type cell (optional)
     model_type = 'biophysical', # used by the simulator to indicate that we are using a biophysical cell.
     dynamics_params = '472363762_fit.json', # model parameters (file will be downloaded from the Allen Cell Types Database)
@@ -47,6 +54,21 @@ cortex.add_nodes(
     model_template = 'ctdb:Biophys1.hoc'
     # cell_name = 'Scnn1a_473845048', # name/type of cell we will be modeling (optional; when N=1)
 )
+
+# Define custom connector function
+'''To do this, one must create a function that takes in a source, target, and a variable number of parameters, and pass back
+a natural number representing the number of connections. The Builder will iterate over that function passing in every source/
+target node pair (filtered by the source and target parameters in add_edges()). The source and target parameters are essentially
+dictionaries that can be used to fetch properties of the nodes. A typical example would look like:'''
+# def customized_connector(source, target, params):
+#     if source.node_id == target.node_id:
+#         # necessary if we don't want autapses
+#         return 0
+#     source_pot = source['potential']
+#     target_pot = target['potential']
+#     # some code to determine number of connections
+#     return n_synapses
+
 
 # Create recurrent connections within population
 '''Next we want to add recurrent edges. To create the connections we will use the built-in distance_connector function, which
@@ -175,10 +197,10 @@ sim.run()
 # ----------------------------------------------------
 
 # # Plot data reports (only reporting cai?)
-# plot_report(config_file='sim_ch02/simulation_config.json', report_name='v', report_file='%s/output/v_report.h5' % (savedir))
+# plot_report(config_file='sim_ch03/simulation_config.json', report_name='v', report_file='%s/output/v_report.h5' % (savedir))
 
 # # Plot raster (also not working)
-# plot_raster(config_file='sim_ch03/simulation_config.json')
+plot_raster(config_file='sim_ch03/simulation_config.json')
 # plt.savefig('%s/rasterResults' % (savedir))
 
 # Get data
@@ -189,15 +211,24 @@ def getData(var):
 v_rec, v_map = getData('v')
 cai_rec, cai_map = getData('cai')
 
+# Get spikes
+f = h5py.File('%s/output/spikes.h5' % (savedir), 'r')
+f.visit(print) # print all datasets in f
+spikeTimes = np.array(f['spikes/mcortex/timestamps'])
+spikeIDs = np.array(f['spikes/mcortex/node_ids'])
+
 # Plot data
-fig,ax = plt.subplots(2,1)
-ax[0].plot(v_rec, label='x')
+fig,ax = plt.subplots(3,1)
+ax[0].plot(v_rec, label='v')
 ax[1].plot(cai_rec, label='cai')
-[ax[i].legend() for i in range(len(ax))]
+ax[2].scatter(spikeTimes,spikeIDs, label='spikes')
+# [ax[i].legend() for i in range(len(ax))]
 plt.savefig('%s/simulationResults' % (savedir))
 
-# # Get spikes
-# f = h5py.File('%s/output/spikes.h5' % (savedir), 'r')
+
+# ----------------------------------------------------
+#  Get neural segment information from NEURON
+# ----------------------------------------------------
 
 # # Get segment locations
 # getXYZ = lambda sec,loc : [sec.x3d(loc), sec.y3d(loc), sec.z3d(loc)]
