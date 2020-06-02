@@ -22,7 +22,7 @@ Nepochspc = max(int(Nepochs/100),1)
 ttypes = ["classical"] # types: (epochIndexther "classical" or "context") 
 conds = ["control", "nofbns", "no2step", "nocrosscom", "nowithincom"] # conditions
 Nttypes, Nconds = len(ttypes), len(conds)
-doplot = True
+doplot = False
 
 # Initialise loss
 lossa = np.zeros([Nttypes,Nconds,Ntrain,Nepochs])
@@ -82,8 +82,10 @@ for itrain in range(Ntrain):
                     g['lr'] = lr[epochIndex]
 
                 # Generate random trials and initial conditions
-                s0,u0,rtarg0 = genrandtrials(B)
-                m0,d0,o0,w0,sbar0,dastdpbar0 = geninitialcond(B)
+                '''For networks trained on first-order conditioning, second-order conditioning and extinction, training consists
+                of random second-order conditioning and extinction trials (for which first-order conditioning is a subcomponent)'''
+                s0, u0, rtarg0 = genrandtrials(B)
+                m0, d0, o0, w0, sbar0, dastdpbar0 = geninitialcond(B)
 
                 # Run model!
                 exec(open("runmodel.py").read())
@@ -102,8 +104,8 @@ for itrain in range(Ntrain):
                 opt.step() # perform single optimisation step
                 opt.zero_grad() # clear gradients
 
-                #constraints
-                #sparse connectivity
+                # Enforce sparse connectivity (J**bin = 1 where initial connectivity is not zero)
+                '''I assume this means that connectivity cannot change unless it is a non-zero value to begin with'''
                 Jmm.data = Jmm.data * Jmmbin
                 Jmd.data = Jmd.data * Jmdbin
                 Jmo.data = Jmo.data * Jmobin
@@ -114,47 +116,51 @@ for itrain in range(Ntrain):
                 Jod.data = Jod.data * Jodbin
                 Joo.data = Joo.data * Joobin
                 
-                #excitatory/inhibitory neurons
+                # Excitatory/inhibitory neurons
+                #   MBON-MBON
                 Jmm.data[:,mexc] = torch.relu(Jmm.data[:,mexc])
-                Jdm.data[:,mexc] = torch.relu(Jdm.data[:,mexc])
-                Jom.data[:,mexc] = torch.relu(Jom.data[:,mexc])
-                Jmo.data[:,oexc] = torch.relu(Jmo.data[:,oexc])
-                Jdo.data[:,oexc] = torch.relu(Jdo.data[:,oexc])
-                Joo.data[:,oexc] = torch.relu(Joo.data[:,oexc])
                 Jmm.data[:,minh] = -torch.relu(-Jmm.data[:,minh])
+                #   DAN-MBON
+                Jdm.data[:,mexc] = torch.relu(Jdm.data[:,mexc])
                 Jdm.data[:,minh] = -torch.relu(-Jdm.data[:,minh])
+                #   FBN-MBOM
+                Jom.data[:,mexc] = torch.relu(Jom.data[:,mexc])
                 Jom.data[:,minh] = -torch.relu(-Jom.data[:,minh])
+                #   MBOM-FBN
+                Jmo.data[:,oexc] = torch.relu(Jmo.data[:,oexc])
                 Jmo.data[:,oinh] = -torch.relu(-Jmo.data[:,oinh])
+                #   DAN-FBN
+                Jdo.data[:,oexc] = torch.relu(Jdo.data[:,oexc])
                 Jdo.data[:,oinh] = -torch.relu(-Jdo.data[:,oinh])
+                #   FBN-FBN
+                Joo.data[:,oexc] = torch.relu(Joo.data[:,oexc])
                 Joo.data[:,oinh] = -torch.relu(-Joo.data[:,oinh])
                 
-                #MBON to PI mapping
+                # Update valence biases (MBON to PI mapping)
                 wrm.data[:,mpos] = torch.relu(wrm.data[:,mpos])
                 wrm.data[:,mneg] = -torch.relu(-wrm.data[:,mneg])
 
-                # #plotting
-                # if (epochIndex % Nepochspc) == 0:
-                #     if doplot:
-                #         plt.clf()
-                #         plt.subplot(311)
-                #         plt.semilogy(track_loss[:epochIndex]/B)
-                #         plt.semilogy(track_loss_da[:epochIndex]/B)
-                #         plt.xlim(0,Nepochs)
-                #         plt.subplot(312)
-                #         plt.plot(r[:,0,0].detach().numpy())
-                #         plt.plot(rtarg[:,0,0].numpy())
-                #         plt.ylim(-1.1,1.1)
+                # Plotting
+                if (epochIndex % Nepochspc) == 0:
+                    if doplot:
+                        plt.clf()
+                        plt.subplot(311)
+                        plt.semilogy(track_loss[:epochIndex]/B)
+                        plt.semilogy(track_loss_da[:epochIndex]/B)
+                        plt.xlim(0,Nepochs)
+                        plt.subplot(312)
+                        plt.plot(r[:,0,0].detach().numpy())
+                        plt.plot(rtarg[:,0,0].numpy())
+                        plt.ylim(-1.1,1.1)
+                        plt.subplot(313)
+                        ra = np.vstack([ma[:,:,0].T,da[:,:,0].T,oa[:,:,0].T])
+                        plt.imshow(ra,vmin=0,vmax=1)
+                        plt.pause(.0001)
+                        plt.show()
+                    curt = time.time()
+                    print("\r" + str(int(epochIndex/Nepochspc)) + "%, ", np.round(curt-lastt,2), "seconds", end="")
+                    lastt = curt
 
-                #         plt.subplot(313)
-                #         ra = np.vstack([ma[:,:,0].T,da[:,:,0].T,oa[:,:,0].T])
-                #         plt.imshow(ra,vmin=0,vmax=1)
-
-                #         plt.pause(.0001)
-                #         plt.show()
-
-                #     curt = time.time()
-                #     print("\r" + str(int(epochIndex/Nepochspc)) + "%, ", np.round(curt-lastt,2), "seconds", end="")
-                #     lastt = curt
-
+            # Save results
             lossa[ittype,icond,itrain,:] = track_loss
             torch.save((train_vars,track_loss),modelfname)

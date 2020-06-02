@@ -19,12 +19,12 @@ U = 2 # size of US vector
 R = 1 # size of output vector
 X = 1 # position (not used for this one)
 probex = 0.5 # prob. of extinction trial 
-minit = 0.
-oinit = 0.1
-dinit = 0.1
-tau = 5 #stdp time constant
+tau = 5 # stdp time constant
 tauw = 5
 wmax = 1./(S*f)
+minit = 0.
+oinit = .1
+dinit = .1
 
 # Define helper functions
 def initrand(X,Y,scalefac=.5):
@@ -39,10 +39,11 @@ def initrandJ(J,scalefac=0.5):
     return scalefac*Jnew
 
 def geninitialcond(B):
-    m0 = minit*np.ones([M,B],dtype=np.float32)
-    d0 = dinit*np.ones([D,B],dtype=np.float32)
-    o0 = oinit*np.ones([O,B],dtype=np.float32)
-    w0 = np.ones([M,S,B],dtype=np.float32)/(S*f)
+    '''At the beginning of a trial, MBON rates are initialized to 0, whereas DAN and feedback neuron rates are initialized to 0.1'''
+    m0 = minit*np.ones([M,B],dtype=np.float32) # MBON rates
+    d0 = dinit*np.ones([D,B],dtype=np.float32) # DAN rates
+    o0 = oinit*np.ones([O,B],dtype=np.float32) # feedback rates
+    w0 = np.ones([M,S,B],dtype=np.float32)/(S*f) # set weights to 1/(S*f)
     sbar0 = np.zeros([S,B],dtype=np.float32)
     dabar0 = np.zeros([M,B],dtype=np.float32)
     return m0,d0,o0,w0,sbar0,dabar0
