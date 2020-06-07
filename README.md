@@ -11,8 +11,19 @@
 - <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/GeneticEvolutionary">Work on growing neural networks using genetic algorithms</a>
 
 ## Analyses
+- <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/Janelia/neuprint">Visualisations of Drosophila neurons (taken from the "hemibrain" connectome</a>
+- <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/FruitFly/fruitFlyCalciumImaging">Whole-brain imaging data of sensory-evoked activity in Drosophila</a>
 - <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/AllenInstitute/NeuroPixels">Allen Institute data (Neuropixels recordings and mouse atlas connectivity)</a>
-- <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/FruitFly/fruitFlyCalciumImaging">Calcium imaging data of sensory-evoked activity in Drosophila</a>
 
+
+## Tutorial notes
+- <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/AllenInstitute/bmtk">Brain Modeling Toolkit (BMTK)</a>
+- <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/Brian/code/tutorials">Brian 2</a>
+- <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/GeneticEvolutionary/DEAP/tutorial">Distributed Evolutionary Algorithms in Python (DEAP)</a>
+- <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/LFPy/tutorials">LFPy</a>
+- <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/Nest/learningPyNest/code/tutorials">(Py)NEST</a>
+- <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/Janelia/neuprint/tutorials">neuprint</a>
+- <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/NEURON/tutorials">NEURON (.hoc & .py)</a>
+- <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/PyRates">PyRates</a>
 
 Also, note that other examples of my work in modelling, maths, and statistics can be found <a href="https://github.com/michaelsmclayton/modellingDevelopment">here</a>.
