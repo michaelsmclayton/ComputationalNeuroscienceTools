@@ -10,7 +10,7 @@
 - <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/Brian/code/examples/hippocampalTheta">Implementation of <i>An integrative model of the intrinsic hippocampal theta rhythm</i>  (Hummos & Nair, 2017; PLoS One)</a>
 - <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/GeneticEvolutionary">Work on growing neural networks using genetic algorithms</a>
 
-## Analyses
+## Data visualisations / analyses
 - <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/Janelia/neuprint">Visualisations of Drosophila neurons (taken from the "hemibrain" connectome)</a>
 - <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/FruitFly/fruitFlyCalciumImaging">Whole-brain imaging data of sensory-evoked activity in Drosophila</a>
 - <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/AllenInstitute/NeuroPixels">Allen Institute data (Neuropixels recordings and mouse atlas connectivity)</a>
