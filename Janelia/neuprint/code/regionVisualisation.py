@@ -10,7 +10,7 @@ from neuprint import Client, NeuronCriteria as NC, SynapseCriteria as SC, \
     fetch_synapse_connections, fetch_roi_hierarchy, fetch_neurons
 
 # Define inputs/outputs for each region
-analysedRegion = 'MB'
+analysedRegion = 'PN'
 regionsParams = {
     'EB': { # projections to ellipsoid body from fan-shaped body neurons (FB4Y)
         'sourceParams': {'status': 'Traced', 'type': 'FB4Y', 'regex':True,
@@ -21,6 +21,10 @@ regionsParams = {
         'sourceParams': {'status': 'Traced', 'type': 'KC.*', 'regex':True, 'cropped':False},
         'synapseParams': None,
         'max_neurons': 300},
+    'PN': { # projection neurons from the right antennal lobe
+        'sourceParams': {'inputRois': ['AL(R)'], 'outputRois': ['CA(R)'], 'status': 'Traced', 'cropped': False},
+        'synapseParams': None,
+        'max_neurons': 50}
 }
 
 # Setup client
@@ -87,6 +91,19 @@ else:
     skeletons = loadPickle(skeletonFile)
 
 
+# Load MB neurons for comparison with PN neurons
+if analysedRegion == 'PN':
+    getRandGrey = lambda : '#' + 'ABCDEF'[np.random.randint(low=0, high=6)]*6
+    mb_skeletons = loadPickle('MB_skeletons.pkl')
+    neuronIDs = np.arange(len(mb_skeletons))
+    np.random.shuffle(neuronIDs)
+    # Change colours to white and extract random 50 neurons
+    for i in neuronIDs[0:75]:
+        color = getRandGrey()
+        mb_skeletons[i].color = [color for i in range(len(mb_skeletons[i].color))]
+        skeletons.append(mb_skeletons[i])
+
+
 ################################################
 # Plotting
 ################################################
@@ -119,8 +136,8 @@ ax = fig.gca(projection='3d')
 for segment in segments:
     subsegments = getSubsegments(segment)
     for seg in subsegments:
-        ax.plot(seg[:,0], seg[:,2], -seg[:,1], linewidth=.25, color=segment.color_parent[0])
-if not(synapses is None): ax.scatter(synapses.x_pre, synapses.z_pre, -synapses.y_pre, s=.01, c='white')
+        ax.plot(seg[:,0], seg[:,1], -seg[:,2], linewidth=.25, color=segment.color_parent[0])
+if not(synapses is None): ax.scatter(synapses.x_pre, synapses.y_pre, synapses.z_pre, s=.01, c='white')
 ax.set_facecolor((0,0,0))
 plt.axis('off')
 

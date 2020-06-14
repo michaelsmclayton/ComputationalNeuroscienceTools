@@ -5,5 +5,8 @@
 ### Projections from fan-shaped body to the ellipsoid body (located in the central complex)
 <img width=50% src="./code/regionVisualisations/ellipsoidBodyProjections.gif"/><br>
 
+### Olfactory projections from the antennal lobe (Kenyon cells shown in white) <br>
+<img width=50% src="./code/regionVisualisations/antennalLobeProjections.gif"/><br>
+
 ### Kenyon cells (located in mushroom bodies) <br>
 <img width=50% src="./code/regionVisualisations/kenyonCells.gif"/><br>
