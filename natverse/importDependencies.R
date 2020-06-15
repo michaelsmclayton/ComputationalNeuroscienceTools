@@ -20,3 +20,14 @@ library(igraph)
 library(rgl)
 library(nat)
 library(ggplot2)
+
+# Define function to determine if RStudio is running
+rstudioRunning <- function() {
+    se <- Sys.getenv()
+    matches = se[grepl("rstudio",se,ignore.case=TRUE)]
+    if (length(matches)==0){
+        return(FALSE)
+    } else {
+        return(TRUE)
+    }
+}
