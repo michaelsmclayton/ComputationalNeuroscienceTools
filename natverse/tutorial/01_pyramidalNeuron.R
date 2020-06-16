@@ -67,6 +67,15 @@ boutons.per.cable = nrow(boutons)/info$cable.length # boutons per cable length
 bps.per.cable = info$branchpoints/info$cable.length # branchpoints per cable
 # -> ~0.006 branchpoints per micron of cable (so about 10x more boutons per cable than branch points)
 
+# Get the longest path (aka spine or backbone) of a neuron
+sp = spine(neuron)
+
+# Plot the neuron as a graph structure (note that this is 2D plot)
+sg = segmentgraph(n)
+p <- plot(sg, layout = layout_with_fr, edge.arrow.size=.1, vertex.color="green",
+vertex.size=5, vertex.frame.color="gray", vertex.label.color="black", vertex.label = "",
+vertex.label.cex=0, vertex.label.dist=5, edge.curved=0.2) 
+
 
 # ----------------------------------------------
 # Calculate Strahler across neuron (a numerical measure of its branching complexity)
@@ -232,7 +241,7 @@ Let's work this out per layer"
 graph = as.ngraph(neuron) # We can now use this representation with functions from the package iGraph.
 
 # Get a single distance value per layer
-boutons$interbouton.distance  = NA
+boutons$interbouton.distance  = NA # Initialise store values
 interbouton = data.frame()
 for(l in unique(boutons$layer)){
   # Just boutons on one layers
