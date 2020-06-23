@@ -57,8 +57,6 @@ if analyseLFP==True:
     lfp = session.get_lfp(probe_id)
     # print(lfp)
 
-    aksjd
-
     # We can figure out where each LFP channel is located in the Brain
     # now use a utility to associate intervals of /rows with structures
     structure_acronyms, intervals = session.channel_structure_intervals(lfp["channel"])
