@@ -16,9 +16,6 @@ It allows you to download data for individual recording sessions and view cross-
 summary information.
 '''
 
-# Analyse flags
-analyseLFP = True
-
 # ---------------------------------
 # Define data paths and download data
 # ---------------------------------
@@ -46,103 +43,22 @@ session = cache.get_session_data(session_id)
 # Get LFP data
 # ---------------------------------
 
-if analyseLFP==True:
+# List the probes recorded from in this session
+# session.probes.head()
 
-    # List the probes recorded from in this session
-    # session.probes.head()
+# load up the lfp from one of the probes. This returns an xarray dataarray
+print('Getting LFP data...')
+probe_id = session.probes.index.values[0]
+lfp = session.get_lfp(probe_id)
+# print(lfp)
 
-    # load up the lfp from one of the probes. This returns an xarray dataarray
-    print('Getting LFP data...')
-    probe_id = session.probes.index.values[0]
-    lfp = session.get_lfp(probe_id)
-    # print(lfp)
+# We can figure out where each LFP channel is located in the Brain
+# now use a utility to associate intervals of /rows with structures
+structure_acronyms, intervals = session.channel_structure_intervals(lfp["channel"])
+interval_midpoints = [aa + (bb - aa) / 2 for aa, bb in zip(intervals[:-1], intervals[1:])]
+# print(structure_acronyms)
+# print(intervals)
 
-    # We can figure out where each LFP channel is located in the Brain
-    # now use a utility to associate intervals of /rows with structures
-    structure_acronyms, intervals = session.channel_structure_intervals(lfp["channel"])
-    interval_midpoints = [aa + (bb - aa) / 2 for aa, bb in zip(intervals[:-1], intervals[1:])]
-    # print(structure_acronyms)
-    # print(intervals)
-
-    # # Get stimulus types and timings
-    # stimulusEvents = session.get_stimulus_epochs()
-    # flashEvents = stimulusEvents[stimulusEvents['stimulus_name']=='flashes']
-    # def getStartAndStopTimes(events):
-    #     startTime, stopTime = [np.double(events[time].values) for time in ['start_time', 'stop_time']]
-    #     return startTime, stopTime
-    # startTime, stopTime = getStartAndStopTimes(flashEvents)
-
-    # Get all flash start and end times
-    flashTable = session.get_stimulus_table("flashes")
-    flashTable = flashTable[flashTable['color']==1]
-    starts, ends = [], []
-    for index, row in flashTable.iterrows():
-        starts.append(row['start_time'])
-        ends.append(row['stop_time'])
-
-    # Combine evoked LFPs together
-    evokedLFP = np.zeros(shape=[len(starts), 77, 312])
-    for flash in range(len(starts)):
-        # print(flash/len(starts))
-        window = np.where(np.logical_and(lfp["time"] < ends[flash], lfp["time"] >= starts[flash]))[0]
-        currentLFP = lfp[{"time": window}].T
-        evokedLFP[flash,:,:] = currentLFP[0:77,0:312]
-
-    # Plot average evoked LFP
-    fig, ax = plt.subplots()
-    ax.pcolormesh(np.mean(evokedLFP,axis=0))
-    ax.set_yticks(intervals)
-    ax.set_yticks(interval_midpoints, minor=True)
-    ax.set_yticklabels(structure_acronyms, minor=True)
-    plt.tick_params("y", which="major", labelleft=False, length=40)
-    plt.show()
-
-    # # Get flash responses
-    # endFlash = 5
-    # startTime = starts[0]
-    # endTime = ends[endFlash]
-    # window = np.where(np.logical_and(lfp["time"] < endTime, lfp["time"] >= startTime))[0]
-    # currentLFP = lfp[{"time": window}].T
-    # # currentLFP -= currentLFP[0,:]
-    # fig, ax = plt.subplots()
-    # ax.pcolormesh(currentLFP)
-    # ax.set_yticks(intervals)
-    # ax.set_yticks(interval_midpoints, minor=True)
-    # ax.set_yticklabels(structure_acronyms, minor=True)
-    # #ax.plot(currentLFP[30,:])
-    # for i in range(endFlash):
-    #     currentStart = np.min(np.where(currentLFP["time"]>starts[i]))
-    #     currentEnd = np.min(np.where(currentLFP["time"]>ends[i]))
-    #     ax.plot([currentStart,currentStart], ax.get_ylim(), linewidth=1, color='black')
-    #     ax.plot([currentEnd,currentEnd], ax.get_ylim(), linewidth=1, color='black')
-    # plt.show()
-    #
-    # # Plot LFP window
-    # def showLFP(startTime, endTime):
-    #     baseline = .1*(endTime-startTime)
-    #     window = np.where(np.logical_and(lfp["time"] < endTime, lfp["time"] >= startTime-baseline))[0]
-    #     fig, ax = plt.subplots()
-    #     ax.pcolormesh(lfp[{"time": window}].T)
-    #     ax.set_yticks(intervals)
-    #     ax.set_yticks(interval_midpoints, minor=True)
-    #     ax.set_yticklabels(structure_acronyms, minor=True)
-    #     plt.tick_params("y", which="major", labelleft=False, length=40)
-    #     num_time_labels = 8
-    #     time_label_indices = np.around(np.linspace(1, len(window), num_time_labels)).astype(int) - 1
-    #     time_labels = [ f"{val:1.3}" for val in lfp["time"].values[window][time_label_indices]]
-    #     ax.set_xticks(time_label_indices + 0.5)
-    #     # ax.set_xticklabels(time_labels)
-    #     ax.set_xlabel("time (s)", fontsize=20)
-
-    # for i in range(5):
-    #     startTime = starts[i]
-    #     endTime = ends[i]
-    #     print(endTime-startTime)
-    #     showLFP(startTime, endTime)
-    # plt.show()
-
-# probes = cache.get_probes()
-# probes.loc[probes.index==probe_id]
 
 # --------------------------------------
 # View probe location and activity
@@ -249,9 +165,6 @@ plt.show()
 # ax.set_zlabel('dors_vent')
 # plt.show()
 
-
-
-unitLocations = np.array([session.units.probe_horizontal_position, session.units.probe_vertical_position])
-
-plt.plot(unitLocations[0,:],unitLocations[1,:])
-plt.show()
+# unitLocations = np.array([session.units.probe_horizontal_position, session.units.probe_vertical_position])
+# plt.plot(unitLocations[0,:],unitLocations[1,:])
+# plt.show()

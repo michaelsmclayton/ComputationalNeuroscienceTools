@@ -4,13 +4,21 @@ Data taken from the Visual Coding - Neuropixels <a href="https://portal.brain-ma
 
 ## Visualising data from a single Neuropixels probe
 
-<a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/blob/master/AllenInstitute/NeuroPixels/neuropixelsLFP.py">neuropixelsLFP.py</a>
+<p align="center" style="font-size: 12pt">
+    <img src="./imgs/singleNeuropixelsProbeView.gif"/></img><br>
+    <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/blob/master/AllenInstitute/NeuroPixels/neuropixelsProbeVisualisation.py">neuropixelsProbeVisualisation.py</a>
+</p>
 
-<img src="./imgs/neuroPixelsProbeActivity.gif"/>
-
-<a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/blob/master/AllenInstitute/NeuroPixels/mouseConnectivity.py">mouseConnectivity.py</a>
+## Evoked activity following visual flash stimili
+<p align="center" style="font-size: 12pt">
+    <img src="./imgs/meanFlashActivity.png"/></img><br>
+    <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/blob/master/AllenInstitute/NeuroPixels/evokedResponse.py">evokedResponse.py</a>
+</p>
 
 ## Visualising mouse connectivity data
 
-<img src="./imgs/lgnConnectivityImg.png"/>
-Maximum projection density - connectivity from lateral geniculate nucleus (LGN)
+<p align="center" style="font-size: 12pt">
+    <img src="./imgs/lgnConnectivityImg.png"/></img><br>
+    <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/blob/master/AllenInstitute/NeuroPixels/mouseConnectivity.py">mouseConnectivity.py</a><br>
+    Maximum projection density - connectivity from lateral geniculate nucleus (LGN)
+</p>
