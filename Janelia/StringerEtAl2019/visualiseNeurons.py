@@ -19,9 +19,10 @@ def normalise(med):
     norm = norm / np.max(norm)
     return norm
 normMed = normalise(med)
+normMed[:,0] = (normMed[:,0]*-1)+1 # Reverse red channel
 
 # Add alpha channel
-alpha = .5
+alpha = 1
 normMed = np.hstack((normMed, alpha*np.ones(shape=[len(normMed),1])))
 
 # Show neurons
@@ -33,7 +34,7 @@ ax.set_facecolor((0,0,0))
 plt.axis('off')
 
 # Rotate the axes and update
-for angle in range(0,720,1):
+for angle in range(0,360,1):
     print(angle)
     ax.view_init(30, angle)
     plt.draw()
