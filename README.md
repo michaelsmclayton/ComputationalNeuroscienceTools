@@ -12,9 +12,9 @@
 
 ## Data visualisations / analyses
 - <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/Janelia/neuprint">Visualisations of Drosophila neurons (taken from the "hemibrain" connectome)</a>
-- <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/FruitFly/fruitFlyCalciumImaging">Whole-brain imaging data of sensory-evoked activity in Drosophila</a>
+- <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/FruitFly/fruitFlyCalciumImaging">Whole-brain imaging data of sensory-evoked activity in Drosophila (from Aimon et al., 2019; PLoS Biology)</a>
 - <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/AllenInstitute/NeuroPixels">Allen Institute data (Neuropixels recordings and mouse atlas connectivity)</a>
-
+- <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/Janelia/StringerEtAl2019">Analyses of the ~10,000 neuron dataset of Stringer et al. (2019; Nature)</a>
 
 ## Tutorial notes
 - <a href="https://github.com/michaelsmclayton/ComputationalNeuroscienceTools/tree/master/AllenInstitute/bmtk">Brain Modeling Toolkit (BMTK)</a>
