@@ -6,6 +6,9 @@ Fast near-whole brain imaging in adult Drosophila during responses to stimuli an
 https://portal.nersc.gov/project/crcns/download/fly-1<br>
 https://github.com/sophie63/FlyLFM<br>
 
+### Spatial structure of visually evoked activity
+<p align=left><img src="./figures/rotateVisualisation.gif"/><br></p>
+
 ### Visual stimuli
 <img src="./visualEvokedActivity.gif"/><br>
 
