@@ -1,5 +1,5 @@
 From data published in:<br>
-<a href="">Eschbach, C., Fushiki, A., Winding, M., Schneider-Mizell, C. M., Shao, M., Arruda, R., ... & Gerber, B. (2020). Recurrent architecture for adaptive regulation of learning in the insect brain. Nature Neuroscience, 23(4), 544-555</a>
+<a href="">Eschbach, C., Fushiki, A., Winding, M., Schneider-Mizell, C. M., Shao, M., Arruda, R., ... & Cardona, A., Zlatic, M. (2020). Recurrent architecture for adaptive regulation of learning in the insect brain. Nature Neuroscience, 23(4), 544-555</a>
 
 ## Analysing shortest path connections between appetitive and aversive DANs
 
