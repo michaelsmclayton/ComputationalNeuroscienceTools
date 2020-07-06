@@ -23,8 +23,13 @@ for pre in range(J.shape[0]):
         if J[pre,post]>0:
             G.add_edge(names[pre], names[post], weight=J[pre,post])
 
-# State nodes (no links from h1)
+# State nodes
 nodes = {'appetitive': ['i1','k1'], 'aversive': ['f1','g1','d1']}
+
+# Note that appetitive DAN-h1 was excluded from this analysis as no
+# post-synaptic partners were found for this neuron
+# len(G.edges('DAN-h1'))==0
+# >>> True
 
 # Get links
 nodeTypes = list(nodes.keys())
@@ -103,12 +108,12 @@ def plotSubgraph(nodeType, ax):
     neuronLists = [getNodeList(neuron) for neuron in neuronTypes]
     neuronLists.append([f'DAN-{neuron}' for neuron in nodes['appetitive']])
     neuronLists.append([f'DAN-{neuron}' for neuron in nodes['aversive']])
-    neuronColors = ['#ecff5a', '#ffb544', '#48d627', '#989898', '#7d79f9', '#f96666']
+    neuronColors = ['#f5f263', '#81d152', '#ff9d4f', '#999999', '#42adc7', '#fc6f65']
     colors = [data['weight'] for node1, node2, data in subG.edges(data=True)]
     for neuronList,color in zip(neuronLists, neuronColors):
-        nx.draw_networkx(subG, arrows=True, node_size=1000, nodelist=neuronList, width=1, font_size=12, font_weight='normal', \
+        nx.draw_networkx(subG, arrows=True, node_size=1000, arrowstyle='-|>', nodelist=neuronList, width=.75, font_size=12, font_weight='normal', \
             font_family='Arial', node_color=color, pos=positions, ax=ax) # edge_color=colors, edge_cmap=plt.cm.Greys, vmax=10
-    ax.set_title(f'A{nodeType[1:]} DAN to {oppositeType} DAN connections', fontdict={'fontsize': 14,'fontweight' : 'normal','fontfamily': 'Arial'})
+    ax.set_title(f'A{nodeType[1:]} to {oppositeType} DAN connections', fontdict={'fontsize': 14,'fontweight' : 'normal','fontfamily': 'Arial'})
     ax.axis('off')
 
 
@@ -116,4 +121,5 @@ def plotSubgraph(nodeType, ax):
 fig, axes = plt.subplots(2,1, figsize=(8, 10))
 for i,nodeType in enumerate(nodeTypes):
     plotSubgraph(nodeType, axes[i])
+fig.savefig('./graphAnalyses/figures/crossValenceConnections.eps', format='eps')
 plt.show()
