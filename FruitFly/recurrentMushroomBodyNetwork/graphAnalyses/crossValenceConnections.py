@@ -21,7 +21,7 @@ exec(open('loadmat.py').read())
 for pre in range(J.shape[0]):
     for post in range(J.shape[1]):
         if J[pre,post]>0:
-            G.add_edge(names[pre], names[post], weight=J[pre,post])
+            G.add_edge(names[post], names[pre], weight=J[pre,post])
 
 # State nodes
 nodes = {'appetitive': ['i1','k1'], 'aversive': ['f1','g1','d1']}
