@@ -22,8 +22,11 @@ config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultS
 
 # Create the population, which is the top-level object for a NEAT run.
 p = neat.Population(config)
-# Add a stdout reporter to show progress in the terminal.
-p.add_reporter(neat.StdOutReporter(False))
+p.add_reporter(neat.StdOutReporter(False)) # add a stdout reporter to show progress in the terminal.
+
+# --------------------
+# Define network evaluation functions
+# --------------------
 
 # Evaluation genome
 def evaluate(env, net, timepoints, render=False):
@@ -47,11 +50,22 @@ def eval_genomes(genomes, config):
         net = neat.nn.RecurrentNetwork.create(genome, config)
         genome.fitness = evaluate(env, net, 300)
 
+# --------------------
+# Run evolution!
+# --------------------
 
 # Run until a solution is found.
-winner = p.run(eval_genomes, 40)
+winner = p.run(eval_genomes, 100)
+
+# --------------------
+# Return best genome
+# --------------------
 
 # Run the winning genome.
 best_genome = p.best_genome
 net = neat.nn.RecurrentNetwork.create(best_genome, config)
-r = evaluate(env, net, 1000, render=True)
+r = evaluate(env, net, 300, render=True)
+
+# Draw net
+import visualize
+d = visualize.draw_net(config, best_genome)

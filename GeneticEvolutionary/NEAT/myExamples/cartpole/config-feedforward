@@ -24,8 +24,8 @@ aggregation_options     = sum
 
 # node bias options
 bias_init_mean          = 0.0
-bias_init_stdev         = 1.0
-bias_max_value          = -1.0
+bias_init_stdev         = 2.0
+bias_max_value          = -2.0
 bias_min_value          = 1.0
 bias_mutate_power       = 0.5
 bias_mutate_rate        = 0.7
@@ -52,9 +52,9 @@ node_delete_prob        = 0.2
 
 # node response options
 response_init_mean      = 1.0
-response_init_stdev     = 0.0
-response_max_value      = 1.0
-response_min_value      = -1.0
+response_init_stdev     = 1.0
+response_max_value      = 2.0
+response_min_value      = -2.0
 response_mutate_power   = 0.0
 response_mutate_rate    = 0.0
 response_replace_rate   = 0.0
